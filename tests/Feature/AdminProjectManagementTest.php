@@ -33,8 +33,6 @@ class AdminProjectManagementTest extends TestCase
             ->where('title', 'New Portfolio Project')
             ->firstOrFail();
 
-        // The current controller deliberately redirects to the edit screen so
-        // the administrator can immediately add the project's gallery/media.
         $response->assertRedirect(route('admin.projects.edit', $project));
 
         $this->assertSame(['Laravel', 'Blade', 'MySQL'], $project->technologies);

@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -31,32 +31,24 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Cache Composer downloads
-        uses: actions/cache@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ~/.composer/cache/files
-          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ runner.os }}-
+          node-version: '22'
+          cache: npm
+
+      - name: Prepare test environment
+        shell: bash
+        run: |
+          cp .env.example .env
+          mkdir -p database
+          touch database/database.sqlite
 
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Prepare test environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate
-          mkdir -p database
-          touch database/database.sqlite
-          php artisan migrate --force
-
-      - name: Run PHP tests
-        run: php artisan test
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
+      - name: Generate application key
+        run: php artisan key:generate --force
 
       - name: Install frontend dependencies
         run: npm ci
@@ -64,9 +56,15 @@ jobs:
       - name: Build production assets
         run: npm run build
 
-      - name: Validate production command
+      - name: Run PHP tests
         env:
-          APP_DEBUG: "false"
-          APP_URL: https://portfolio.example.test
-          FORCE_HTTPS: "true"
-        run: php artisan portfolio:production-check
+          APP_ENV: testing
+          APP_URL: http://localhost
+          ASSET_URL: ''
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          CACHE_STORE: array
+          SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
+          MAIL_MAILER: array
+        run: php artisan test

@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Configure GitHub Pages
         id: pages
@@ -37,19 +37,17 @@ jobs:
           tools: composer:v2
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
 
-      - name: Prepare Pages environment
+      - name: Prepare application files
         shell: bash
         run: |
           cp deploy/github-pages.env .env
           mkdir -p database
           touch database/database.sqlite
-          echo "APP_URL=${{ steps.pages.outputs.base_url }}" >> "$GITHUB_ENV"
-          echo "ASSET_URL=${{ steps.pages.outputs.base_url }}" >> "$GITHUB_ENV"
           echo "PORTFOLIO_EMAIL=${{ vars.PORTFOLIO_EMAIL }}" >> "$GITHUB_ENV"
           echo "STATIC_CONTACT_ENDPOINT=${{ vars.STATIC_CONTACT_ENDPOINT }}" >> "$GITHUB_ENV"
           echo "GITHUB_PAGES_CNAME=${{ vars.GITHUB_PAGES_CNAME }}" >> "$GITHUB_ENV"
@@ -61,27 +59,47 @@ jobs:
       - name: Generate application key
         run: php artisan key:generate --force
 
-      # Tests run before the real Vite build. StaticExportCommandTest creates
-      # an isolated fake manifest when no build exists, then cleans it up.
-      - name: Run automated tests
-        run: php artisan test
-
       - name: Install frontend dependencies
         run: npm ci
 
       - name: Build production assets
         run: npm run build
 
+      - name: Run automated tests
+        env:
+          APP_ENV: testing
+          APP_URL: http://localhost
+          ASSET_URL: ''
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+          CACHE_STORE: array
+          SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
+          MAIL_MAILER: array
+        run: php artisan test
+
       - name: Build deployment content database
+        env:
+          APP_ENV: production
+          APP_URL: ${{ steps.pages.outputs.base_url }}
+          ASSET_URL: ${{ steps.pages.outputs.base_url }}
         shell: bash
         run: |
+          php artisan optimize:clear
           php artisan migrate:fresh --seed --force
+
           if [ -f content/portfolio.json ]; then
             php artisan portfolio:content-import --replace --force
           fi
 
       - name: Export Laravel pages
-        run: php artisan portfolio:export-static --output=storage/app/static-export --base-url="${{ steps.pages.outputs.base_url }}"
+        env:
+          APP_ENV: production
+          APP_URL: ${{ steps.pages.outputs.base_url }}
+          ASSET_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          php artisan optimize:clear
+          php artisan portfolio:export-static             --output=storage/app/static-export             --base-url="${{ steps.pages.outputs.base_url }}"
 
       - name: Validate generated site
         shell: bash
@@ -91,15 +109,18 @@ jobs:
           test -s storage/app/static-export/sitemap.xml
           test -s storage/app/static-export/site.webmanifest
           test -f storage/app/static-export/.nojekyll
+          test -s storage/app/static-export/build/manifest.json
           test -d storage/app/static-export/build/assets
           find storage/app/static-export/build/assets -type f -print -quit | grep -q .
+
           if [ -d storage/app/static-export/projects ]; then
             find storage/app/static-export/projects -name index.html -type f -print -quit | grep -q .
           fi
-          ! grep -R "http://127.0.0.1\|http://localhost" storage/app/static-export --include='*.html'
+
+          ! grep -R "http://127.0.0.1\|http://localhost"             storage/app/static-export             --include='*.html'
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           path: storage/app/static-export
           include-hidden-files: true

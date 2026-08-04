@@ -68,18 +68,16 @@ class StaticExportCommandTest extends TestCase
         $manifestPath = $this->outputPath.'/build/manifest.json';
         $this->assertFileExists($manifestPath);
 
-        $manifest = json_decode(
+        $viteManifest = json_decode(
             File::get($manifestPath),
             true,
             512,
             JSON_THROW_ON_ERROR,
         );
 
-        $cssFile = $this->manifestAsset($manifest, 'resources/css/app.css');
-        $jsFile = $this->manifestAsset($manifest, 'resources/js/app.js');
+        $cssFile = $this->manifestFile($viteManifest, 'resources/css/app.css');
+        $jsFile = $this->manifestFile($viteManifest, 'resources/js/app.js');
 
-        // Vite fingerprints production assets (for example app-Ab12Cd.css).
-        // The test must validate the manifest result instead of a fixed filename.
         $this->assertFileExists($this->outputPath.'/build/'.$cssFile);
         $this->assertFileExists($this->outputPath.'/build/'.$jsFile);
 
@@ -102,12 +100,12 @@ class StaticExportCommandTest extends TestCase
     /**
      * @param array<string, mixed> $manifest
      */
-    private function manifestAsset(array $manifest, string $entry): string
+    private function manifestFile(array $manifest, string $entry): string
     {
         $file = $manifest[$entry]['file'] ?? null;
 
         if (! is_string($file) || $file === '') {
-            throw new RuntimeException("Vite manifest entry [{$entry}] is missing.");
+            throw new RuntimeException("Missing Vite manifest entry [{$entry}].");
         }
 
         return ltrim($file, '/');
