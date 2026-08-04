@@ -9,6 +9,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read
 
 concurrency:
   group: github-pages
@@ -37,7 +38,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.20.1'
+          node-version: '22'
           cache: npm
 
       - name: Prepare Pages environment
@@ -45,8 +46,8 @@ jobs:
         run: |
           cp deploy/github-pages.env .env
           touch database/database.sqlite
-          echo "APP_URL=${{ steps.pages.outputs.base_url }}" >> "$GITHUB_ENV"
-          echo "ASSET_URL=${{ steps.pages.outputs.base_url }}" >> "$GITHUB_ENV"
+          echo "APP_URL=https://parsa-emami.github.io/parsa-portfolio" >> "$GITHUB_ENV"
+          echo "ASSET_URL=https://parsa-emami.github.io/parsa-portfolio" >> "$GITHUB_ENV"
           echo "PORTFOLIO_EMAIL=${{ vars.PORTFOLIO_EMAIL }}" >> "$GITHUB_ENV"
           echo "STATIC_CONTACT_ENDPOINT=${{ vars.STATIC_CONTACT_ENDPOINT }}" >> "$GITHUB_ENV"
           echo "GITHUB_PAGES_CNAME=${{ vars.GITHUB_PAGES_CNAME }}" >> "$GITHUB_ENV"
