@@ -8,6 +8,7 @@ use Database\Seeders\SiteSettingSeeder;
 use Database\Seeders\SkillSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use RuntimeException;
 use Tests\TestCase;
 
 class StaticExportCommandTest extends TestCase
@@ -63,16 +64,53 @@ class StaticExportCommandTest extends TestCase
         $this->assertFileExists($this->outputPath.'/site.webmanifest');
         $this->assertFileExists($this->outputPath.'/.nojekyll');
         $this->assertFileExists($this->outputPath.'/projects/demian-arcade/index.html');
-        $this->assertFileExists($this->outputPath.'/build/assets/app.css');
+
+        $manifestPath = $this->outputPath.'/build/manifest.json';
+        $this->assertFileExists($manifestPath);
+
+        $manifest = json_decode(
+            File::get($manifestPath),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
+
+        $cssFile = $this->manifestAsset($manifest, 'resources/css/app.css');
+        $jsFile = $this->manifestAsset($manifest, 'resources/js/app.js');
+
+        // Vite fingerprints production assets (for example app-Ab12Cd.css).
+        // The test must validate the manifest result instead of a fixed filename.
+        $this->assertFileExists($this->outputPath.'/build/'.$cssFile);
+        $this->assertFileExists($this->outputPath.'/build/'.$jsFile);
 
         $home = File::get($this->outputPath.'/index.html');
-        $manifest = json_decode(File::get($this->outputPath.'/site.webmanifest'), true, flags: JSON_THROW_ON_ERROR);
+        $webManifest = json_decode(
+            File::get($this->outputPath.'/site.webmanifest'),
+            true,
+            512,
+            JSON_THROW_ON_ERROR,
+        );
 
-        $this->assertStringContainsString($baseUrl.'/build/assets/app.css', $home);
+        $this->assertStringContainsString($baseUrl.'/build/'.$cssFile, $home);
+        $this->assertStringContainsString($baseUrl.'/build/'.$jsFile, $home);
         $this->assertStringContainsString('data-static-contact-form', $home);
         $this->assertStringNotContainsString($baseUrl.'/contact', $home);
-        $this->assertSame($baseUrl, $manifest['start_url']);
-        $this->assertSame($baseUrl.'/', $manifest['scope']);
+        $this->assertSame($baseUrl, $webManifest['start_url']);
+        $this->assertSame($baseUrl.'/', $webManifest['scope']);
+    }
+
+    /**
+     * @param array<string, mixed> $manifest
+     */
+    private function manifestAsset(array $manifest, string $entry): string
+    {
+        $file = $manifest[$entry]['file'] ?? null;
+
+        if (! is_string($file) || $file === '') {
+            throw new RuntimeException("Vite manifest entry [{$entry}] is missing.");
+        }
+
+        return ltrim($file, '/');
     }
 
     private function ensureTestViteBuildExists(): void

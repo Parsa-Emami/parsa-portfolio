@@ -29,9 +29,13 @@ class AdminProjectManagementTest extends TestCase
             'sort_order' => 4,
         ]);
 
-        $response->assertRedirect(route('admin.projects.index'));
+        $project = Project::query()
+            ->where('title', 'New Portfolio Project')
+            ->firstOrFail();
 
-        $project = Project::query()->where('title', 'New Portfolio Project')->firstOrFail();
+        // The current controller deliberately redirects to the edit screen so
+        // the administrator can immediately add the project's gallery/media.
+        $response->assertRedirect(route('admin.projects.edit', $project));
 
         $this->assertSame(['Laravel', 'Blade', 'MySQL'], $project->technologies);
         $this->assertTrue($project->is_published);

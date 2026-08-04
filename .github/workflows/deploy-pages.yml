@@ -9,7 +9,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  actions: read
 
 concurrency:
   group: github-pages
@@ -19,10 +18,11 @@ jobs:
   build:
     name: Build static Laravel portfolio
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure GitHub Pages
         id: pages
@@ -32,11 +32,12 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite, gd
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite, gd, zip
           coverage: none
+          tools: composer:v2
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -45,28 +46,31 @@ jobs:
         shell: bash
         run: |
           cp deploy/github-pages.env .env
+          mkdir -p database
           touch database/database.sqlite
-          echo "APP_URL=https://parsa-emami.github.io/parsa-portfolio" >> "$GITHUB_ENV"
-          echo "ASSET_URL=https://parsa-emami.github.io/parsa-portfolio" >> "$GITHUB_ENV"
+          echo "APP_URL=${{ steps.pages.outputs.base_url }}" >> "$GITHUB_ENV"
+          echo "ASSET_URL=${{ steps.pages.outputs.base_url }}" >> "$GITHUB_ENV"
           echo "PORTFOLIO_EMAIL=${{ vars.PORTFOLIO_EMAIL }}" >> "$GITHUB_ENV"
           echo "STATIC_CONTACT_ENDPOINT=${{ vars.STATIC_CONTACT_ENDPOINT }}" >> "$GITHUB_ENV"
           echo "GITHUB_PAGES_CNAME=${{ vars.GITHUB_PAGES_CNAME }}" >> "$GITHUB_ENV"
           echo "APP_COMMIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
 
       - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+        run: composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader
 
       - name: Generate application key
         run: php artisan key:generate --force
+
+      # Tests run before the real Vite build. StaticExportCommandTest creates
+      # an isolated fake manifest when no build exists, then cleans it up.
+      - name: Run automated tests
+        run: php artisan test
 
       - name: Install frontend dependencies
         run: npm ci
 
       - name: Build production assets
         run: npm run build
-
-      - name: Run automated tests
-        run: php artisan test
 
       - name: Build deployment content database
         shell: bash
@@ -85,14 +89,17 @@ jobs:
           test -s storage/app/static-export/index.html
           test -s storage/app/static-export/404.html
           test -s storage/app/static-export/sitemap.xml
+          test -s storage/app/static-export/site.webmanifest
+          test -f storage/app/static-export/.nojekyll
+          test -d storage/app/static-export/build/assets
+          find storage/app/static-export/build/assets -type f -print -quit | grep -q .
           if [ -d storage/app/static-export/projects ]; then
             find storage/app/static-export/projects -name index.html -type f -print -quit | grep -q .
           fi
-          test -d storage/app/static-export/build/assets
           ! grep -R "http://127.0.0.1\|http://localhost" storage/app/static-export --include='*.html'
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: storage/app/static-export
           include-hidden-files: true
