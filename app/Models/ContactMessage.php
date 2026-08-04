@@ -11,20 +11,16 @@ class ContactMessage extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'email',
-        'subject',
-        'message',
-        'status',
-        'read_at',
-        'ip_address',
-        'user_agent',
+        'name', 'email', 'subject', 'message', 'status', 'read_at', 'ip_address',
+        'ip_hash', 'user_agent', 'reply_message', 'replied_at', 'archived_at',
     ];
 
     protected function casts(): array
     {
         return [
             'read_at' => 'datetime',
+            'replied_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 
@@ -33,13 +29,15 @@ class ContactMessage extends Model
         return $query->whereNull('read_at');
     }
 
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereNull('archived_at');
+    }
+
     public function markAsRead(): void
     {
         if ($this->read_at === null) {
-            $this->forceFill([
-                'status' => 'read',
-                'read_at' => now(),
-            ])->save();
+            $this->forceFill(['status' => 'read', 'read_at' => now()])->save();
         }
     }
 }

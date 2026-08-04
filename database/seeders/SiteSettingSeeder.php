@@ -10,16 +10,18 @@ class SiteSettingSeeder extends Seeder
     public function run(): void
     {
         foreach (SiteSetting::definitions() as $index => $definition) {
-            SiteSetting::query()->firstOrCreate(
-                ['key' => $index],
-                [
-                    'label' => $definition['label'],
-                    'value' => $definition['default'] ?? null,
-                    'group' => $definition['group'],
-                    'type' => $definition['type'],
-                    'sort_order' => array_search($index, array_keys(SiteSetting::definitions()), true),
-                ]
-            );
+            $setting = SiteSetting::query()->firstOrNew(['key' => $index]);
+
+            if (! $setting->exists) {
+                $setting->value = $definition['default'] ?? null;
+            }
+
+            $setting->fill([
+                'label' => $definition['label'],
+                'group' => $definition['group'],
+                'type' => $definition['type'],
+                'sort_order' => array_search($index, array_keys(SiteSetting::definitions()), true),
+            ])->save();
         }
 
         SiteSetting::forgetCache();

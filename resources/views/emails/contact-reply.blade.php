@@ -1,0 +1,1 @@
+<!doctype html><html><body style="font-family:Arial,sans-serif;color:#111;line-height:1.7"><p>Hi {{ $contactMessage->name }},</p><div>{!! nl2br(e($replyText)) !!}</div><hr><p style="color:#666;font-size:13px">Your original message: {{ $contactMessage->subject ?: 'Portfolio enquiry' }}</p></body></html>

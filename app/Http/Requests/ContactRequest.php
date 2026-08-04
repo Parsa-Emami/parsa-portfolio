@@ -6,9 +6,16 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ContactRequest extends FormRequest
 {
-    public function authorize(): bool
+    public function authorize(): bool { return true; }
+
+    protected function prepareForValidation(): void
     {
-        return true;
+        $this->merge([
+            'name' => trim((string) $this->input('name')),
+            'email' => strtolower(trim((string) $this->input('email'))),
+            'subject' => trim((string) $this->input('subject')),
+            'message' => trim((string) $this->input('message')),
+        ]);
     }
 
     public function rules(): array
@@ -17,8 +24,9 @@ class ContactRequest extends FormRequest
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email:rfc', 'max:190'],
             'subject' => ['nullable', 'string', 'max:190'],
-            'message' => ['required', 'string', 'min:20', 'max:5000'],
+            'message' => ['required', 'string', 'min:30', 'max:5000'],
             'website' => ['nullable', 'string', 'max:0'],
+            'started_at' => ['nullable', 'integer'],
         ];
     }
 }

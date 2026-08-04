@@ -1,22 +1,7 @@
 @extends('layouts.admin')
-@section('title', 'پیام ' . $message->name)
-@section('heading', 'جزئیات پیام')
-@section('eyebrow', $message->created_at->format('Y/m/d H:i'))
+@section('title','پیام '.$message->name) @section('heading','جزئیات پیام') @section('eyebrow',$message->created_at->format('Y/m/d H:i'))
 @section('content')
-    <section class="admin-panel admin-message-card">
-        <div class="admin-message-header">
-            <div><h2>{{ $message->subject ?: 'بدون موضوع' }}</h2><p>از {{ $message->name }} — <a href="mailto:{{ $message->email }}">{{ $message->email }}</a></p></div>
-            <a class="admin-primary-button" href="mailto:{{ $message->email }}?subject={{ rawurlencode('Re: ' . ($message->subject ?: 'Portfolio inquiry')) }}">پاسخ با ایمیل</a>
-        </div>
-        <div class="admin-message-body">{!! nl2br(e($message->message)) !!}</div>
-        <div class="admin-message-meta"><span>IP: {{ $message->ip_address ?: '—' }}</span><span>{{ $message->created_at->diffForHumans() }}</span></div>
-    </section>
-
-    <div class="admin-sticky-actions">
-        <a class="admin-secondary-button" href="{{ route('admin.messages.index') }}">بازگشت</a>
-        <form method="POST" action="{{ route('admin.messages.destroy', $message) }}" onsubmit="return confirm('این پیام حذف شود؟')">
-            @csrf @method('DELETE')
-            <button class="admin-danger-button" type="submit">حذف پیام</button>
-        </form>
-    </div>
+<section class="admin-panel admin-message-card"><div class="admin-message-header"><div><h2>{{ $message->subject ?: 'بدون موضوع' }}</h2><p>از {{ $message->name }} — <a href="mailto:{{ $message->email }}">{{ $message->email }}</a></p></div><span class="admin-status is-live">{{ $message->status }}</span></div><div class="admin-message-body">{!! nl2br(e($message->message)) !!}</div><div class="admin-message-meta"><span>شناسه شبکه: {{ $message->ip_hash ? mb_substr($message->ip_hash,0,12).'…':'—' }}</span><span>{{ $message->created_at->diffForHumans() }}</span></div></section>
+<section class="admin-panel admin-form-section"><div class="admin-panel-heading"><div><p>Reply</p><h2>پاسخ مستقیم</h2></div></div>@if($message->replied_at)<div class="admin-previous-reply"><span>پاسخ ارسال‌شده در {{ $message->replied_at->format('Y/m/d H:i') }}</span><p>{!! nl2br(e($message->reply_message)) !!}</p></div>@endif<form class="admin-form" method="POST" action="{{ route('admin.messages.reply',$message) }}">@csrf<label><span>متن پاسخ</span><textarea name="reply_message" rows="8" required>{{ old('reply_message') }}</textarea></label><button class="admin-primary-button" type="submit">ارسال پاسخ</button></form></section>
+<div class="admin-sticky-actions"><a class="admin-secondary-button" href="{{ route('admin.messages.index') }}">بازگشت</a><form method="POST" action="{{ route('admin.messages.archive',$message) }}">@csrf @method('PATCH')<button class="admin-secondary-button" type="submit">{{ $message->archived_at ? 'خروج از آرشیو':'آرشیو' }}</button></form><form method="POST" action="{{ route('admin.messages.destroy',$message) }}" onsubmit="return confirm('این پیام حذف شود؟')">@csrf @method('DELETE')<button class="admin-danger-button" type="submit">حذف پیام</button></form></div>
 @endsection
