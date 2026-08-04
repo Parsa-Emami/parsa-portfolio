@@ -21,6 +21,7 @@
             <a href="{{ route('admin.experiences.index') }}" @class(['is-active'=>request()->routeIs('admin.experiences.*')])>سوابق</a>
             <a href="{{ route('admin.messages.index') }}" @class(['is-active'=>request()->routeIs('admin.messages.*')])>پیام‌ها</a>
             <a href="{{ route('admin.settings.edit') }}" @class(['is-active'=>request()->routeIs('admin.settings.*')])>تنظیمات سایت</a>
+            <a href="{{ route('admin.activity.index') }}" @class(['is-active'=>request()->routeIs('admin.activity.*')])>گزارش فعالیت</a>
         </nav>
         <div class="admin-sidebar-footer">
             <a href="{{ route('portfolio.index') }}" target="_blank">مشاهده سایت ↗</a>

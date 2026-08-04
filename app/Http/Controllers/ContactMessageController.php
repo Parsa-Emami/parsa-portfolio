@@ -32,7 +32,7 @@ class ContactMessageController extends Controller
         $recipient = SiteSetting::values()['email'] ?? config('portfolio.admin.email');
         if (filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             try {
-                Mail::to($recipient)->send(new NewContactMessageMail($message));
+                Mail::to($recipient)->queue(new NewContactMessageMail($message));
             } catch (\Throwable $exception) {
                 Log::warning('Portfolio contact notification could not be sent.', ['exception' => $exception->getMessage()]);
             }

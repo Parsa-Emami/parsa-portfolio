@@ -41,7 +41,7 @@ class ContactWorkflowTest extends TestCase
         $this->assertNull($message->ip_address);
         $this->assertNotNull($message->ip_hash);
         $this->assertSame(64, strlen($message->ip_hash));
-        Mail::assertSent(NewContactMessageMail::class);
+        Mail::assertQueued(NewContactMessageMail::class);
     }
 
     public function test_admin_can_reply_to_contact_message(): void
@@ -63,6 +63,6 @@ class ContactWorkflowTest extends TestCase
         $message->refresh();
         $this->assertSame('replied', $message->status);
         $this->assertNotNull($message->replied_at);
-        Mail::assertSent(ContactReplyMail::class, fn (ContactReplyMail $mail) => $mail->hasTo('client@example.com'));
+        Mail::assertQueued(ContactReplyMail::class, fn (ContactReplyMail $mail) => $mail->hasTo('client@example.com'));
     }
 }

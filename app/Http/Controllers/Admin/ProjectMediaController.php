@@ -84,7 +84,7 @@ class ProjectMediaController extends Controller
         $path = trim($parts['path'] ?? '', '/');
 
         if (in_array($host, ['youtu.be', 'www.youtu.be'], true) && $path !== '') {
-            return 'https://www.youtube.com/embed/'.rawurlencode(explode('/', $path)[0]);
+            return 'https://www.youtube-nocookie.com/embed/'.rawurlencode(explode('/', $path)[0]);
         }
 
         if (in_array($host, ['youtube.com', 'www.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com'], true)) {
@@ -102,6 +102,10 @@ class ProjectMediaController extends Controller
 
         if (in_array($host, ['vimeo.com', 'www.vimeo.com'], true) && ctype_digit($path)) {
             return 'https://player.vimeo.com/video/'.$path;
+        }
+
+        if ($host === 'player.vimeo.com' && preg_match('#^video/(\d+)$#', $path, $matches)) {
+            return 'https://player.vimeo.com/video/'.$matches[1];
         }
 
         return $url;

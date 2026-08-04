@@ -12,7 +12,7 @@
 @foreach($project->media as $media)<article class="admin-media-card" data-media-id="{{ $media->id }}">
 <div class="admin-media-preview">@if($media->type==='image')<img src="{{ $media->thumbnail_url }}" alt="">@else<div class="admin-video-placeholder">VIDEO</div>@endif<span class="admin-drag-handle">↕</span></div>
 <form method="POST" action="{{ route('admin.projects.media.update',[$project,$media]) }}">@csrf @method('PUT')<input type="text" name="alt_text" value="{{ $media->alt_text }}" placeholder="Alt text"><textarea name="caption" rows="2" placeholder="Caption">{{ $media->caption }}</textarea><select name="display_size"><option value="standard" @selected($media->display_size==='standard')>استاندارد</option><option value="wide" @selected($media->display_size==='wide')>عریض</option><option value="portrait" @selected($media->display_size==='portrait')>عمودی</option></select><input type="hidden" name="is_featured" value="0"><label class="admin-checkbox"><input type="checkbox" name="is_featured" value="1" @checked($media->is_featured)><span>رسانه شاخص</span></label><button class="admin-secondary-button" type="submit">ذخیره</button></form>
-<form method="POST" action="{{ route('admin.projects.media.destroy',[$project,$media]) }}" onsubmit="return confirm('این رسانه حذف شود؟')">@csrf @method('DELETE')<button class="admin-danger-link" type="submit">حذف</button></form>
+<form method="POST" action="{{ route('admin.projects.media.destroy',[$project,$media]) }}" data-confirm="این رسانه حذف شود؟">@csrf @method('DELETE')<button class="admin-danger-link" type="submit">حذف</button></form>
 </article>@endforeach</div>@else<p class="admin-empty">هنوز رسانه‌ای اضافه نشده است.</p>@endif
 </section>
 @endsection

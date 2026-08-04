@@ -1,0 +1,13 @@
+[program:parsa-portfolio-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=/usr/bin/php /var/www/parsa-portfolio/artisan queue:work database --sleep=3 --tries=3 --max-time=3600
+directory=/var/www/parsa-portfolio
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/parsa-portfolio/storage/logs/worker.log
+stopwaitsecs=3600

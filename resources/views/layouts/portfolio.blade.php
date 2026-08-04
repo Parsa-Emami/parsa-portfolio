@@ -34,7 +34,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&display=swap" rel="stylesheet">
 
-    <script>
+    <script nonce="{{ $cspNonce ?? '' }}">
         (() => {
             const saved = localStorage.getItem('portfolio-theme');
             const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
@@ -99,8 +99,8 @@
     </footer>
 
     @if ($settings['analytics_id'] ?? null)
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($settings['analytics_id']) }}"></script>
-        <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config',@json($settings['analytics_id']));</script>
+        <script nonce="{{ $cspNonce ?? '' }}" async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($settings['analytics_id']) }}"></script>
+        <script nonce="{{ $cspNonce ?? '' }}">window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config',@json($settings['analytics_id']));</script>
     @endif
 </body>
 </html>

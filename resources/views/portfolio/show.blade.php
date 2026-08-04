@@ -7,7 +7,7 @@
 @section('og_image', $project->og_image ?: $project->cover_image ?: ($settings['site_og_image'] ?? ''))
 
 @push('structured-data')
-<script type="application/ld+json">{!! json_encode([
+<script nonce="{{ $cspNonce ?? '' }}" type="application/ld+json">{!! json_encode([
     '@context' => 'https://schema.org',
     '@type' => 'SoftwareSourceCode',
     'name' => $project->title,

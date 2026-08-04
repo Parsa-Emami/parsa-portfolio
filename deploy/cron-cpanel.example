@@ -1,0 +1,7 @@
+# cPanel Cron Jobs — replace paths and PHP binary as needed.
+
+# Laravel scheduler:
+* * * * * cd /home/USERNAME/apps/parsa-portfolio && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1
+
+# Process queued email jobs without requiring Supervisor:
+* * * * * cd /home/USERNAME/apps/parsa-portfolio && /usr/local/bin/php artisan queue:work database --stop-when-empty --tries=3 --max-time=50 >> /dev/null 2>&1

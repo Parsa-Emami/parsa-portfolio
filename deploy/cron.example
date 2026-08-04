@@ -1,0 +1,2 @@
+# Run Laravel scheduler every minute:
+* * * * * cd /var/www/parsa-portfolio && /usr/bin/php artisan schedule:run >> /dev/null 2>&1

@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Middleware\AuditAdminActivity;
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\RequestContext;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,8 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append([
+            RequestContext::class,
+            SecurityHeaders::class,
+        ]);
+
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
+            'audit.admin' => AuditAdminActivity::class,
         ]);
 
         $middleware->redirectGuestsTo(fn () => route('admin.login'));

@@ -37,7 +37,7 @@ class ContactMessageController extends Controller
     public function reply(Request $request, ContactMessage $message): RedirectResponse
     {
         $validated = $request->validate(['reply_message' => ['required', 'string', 'min:10', 'max:10000']]);
-        Mail::to($message->email)->send(new ContactReplyMail($message, $validated['reply_message']));
+        Mail::to($message->email)->queue(new ContactReplyMail($message, $validated['reply_message']));
         $message->update([
             'reply_message' => $validated['reply_message'],
             'replied_at' => now(),
