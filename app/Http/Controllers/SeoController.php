@@ -32,7 +32,8 @@ class SeoController extends Controller
         return response()->json([
             'name' => $settings['name'] ?? config('portfolio.name'),
             'short_name' => $settings['name'] ?? 'Portfolio',
-            'start_url' => '/',
+            'start_url' => route('portfolio.index'),
+            'scope' => rtrim(route('portfolio.index'), '/').'/',
             'display' => 'standalone',
             'background_color' => '#0b0b0c',
             'theme_color' => '#d7ff3f',

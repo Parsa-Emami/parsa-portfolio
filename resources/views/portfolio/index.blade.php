@@ -142,19 +142,52 @@
             @if ($settings['resume_file'])<a href="{{ Storage::url($settings['resume_file']) }}" target="_blank" rel="noreferrer">Download résumé ↗</a>@endif
         </div>
 
-        <form class="contact-form" method="POST" action="{{ route('portfolio.contact.store') }}" data-contact-form data-reveal>
-            @csrf
-            <div class="contact-alert" data-form-status role="status" aria-live="polite">{{ session('contact_success') ?: session('contact_error') }}</div>
-            <div class="contact-form-row">
-                <label><span>Name</span><input type="text" name="name" value="{{ old('name') }}" autocomplete="name" required><small data-error="name">@error('name'){{ $message }}@enderror</small></label>
-                <label><span>Email</span><input type="email" name="email" value="{{ old('email') }}" autocomplete="email" required><small data-error="email">@error('email'){{ $message }}@enderror</small></label>
-            </div>
-            <label><span>Subject</span><input type="text" name="subject" value="{{ old('subject') }}" autocomplete="off"><small data-error="subject">@error('subject'){{ $message }}@enderror</small></label>
-            <label><span>Tell me about the project</span><textarea name="message" rows="6" required>{{ old('message') }}</textarea><small data-error="message">@error('message'){{ $message }}@enderror</small></label>
-            <div class="contact-honeypot" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
-            <input type="hidden" name="started_at" value="{{ now()->timestamp }}">
-            <button type="submit" data-submit-button><span>Send message</span><i>↗</i></button>
-        </form>
+        @if (config('static-export.enabled'))
+            @php($staticContactEndpoint = trim((string) config('static-export.contact_endpoint')))
+            @if ($staticContactEndpoint !== '')
+                <form class="contact-form" method="POST" action="{{ $staticContactEndpoint }}" data-reveal>
+                    <div class="contact-alert" role="status" aria-live="polite">This form is securely handled by an external form endpoint.</div>
+                    <div class="contact-form-row">
+                        <label><span>Name</span><input type="text" name="name" autocomplete="name" required></label>
+                        <label><span>Email</span><input type="email" name="email" autocomplete="email" required></label>
+                    </div>
+                    <label><span>Subject</span><input type="text" name="subject" autocomplete="off"></label>
+                    <label><span>Tell me about the project</span><textarea name="message" rows="6" required></textarea></label>
+                    <input type="hidden" name="source" value="{{ route('portfolio.index') }}">
+                    <button type="submit"><span>Send message</span><i>↗</i></button>
+                </form>
+            @elseif ($settings['email'])
+                <form class="contact-form" method="GET" action="mailto:{{ $settings['email'] }}" data-static-contact-form data-contact-email="{{ $settings['email'] }}" data-reveal>
+                    <div class="contact-alert" data-form-status role="status" aria-live="polite">Submitting opens your default email application.</div>
+                    <div class="contact-form-row">
+                        <label><span>Name</span><input type="text" name="name" autocomplete="name" required></label>
+                        <label><span>Email</span><input type="email" name="email" autocomplete="email" required></label>
+                    </div>
+                    <label><span>Subject</span><input type="text" name="subject" autocomplete="off"></label>
+                    <label><span>Tell me about the project</span><textarea name="message" rows="6" required></textarea></label>
+                    <button type="submit"><span>Prepare email</span><i>↗</i></button>
+                </form>
+            @else
+                <div class="contact-form" data-reveal>
+                    <div class="contact-alert is-success">The GitHub Pages edition has no server-side inbox. Continue the conversation through GitHub.</div>
+                    <a class="availability" href="{{ $settings['github_url'] }}" target="_blank" rel="noreferrer">Open GitHub profile ↗</a>
+                </div>
+            @endif
+        @else
+            <form class="contact-form" method="POST" action="{{ route('portfolio.contact.store') }}" data-contact-form data-reveal>
+                @csrf
+                <div class="contact-alert" data-form-status role="status" aria-live="polite">{{ session('contact_success') ?: session('contact_error') }}</div>
+                <div class="contact-form-row">
+                    <label><span>Name</span><input type="text" name="name" value="{{ old('name') }}" autocomplete="name" required><small data-error="name">@error('name'){{ $message }}@enderror</small></label>
+                    <label><span>Email</span><input type="email" name="email" value="{{ old('email') }}" autocomplete="email" required><small data-error="email">@error('email'){{ $message }}@enderror</small></label>
+                </div>
+                <label><span>Subject</span><input type="text" name="subject" value="{{ old('subject') }}" autocomplete="off"><small data-error="subject">@error('subject'){{ $message }}@enderror</small></label>
+                <label><span>Tell me about the project</span><textarea name="message" rows="6" required>{{ old('message') }}</textarea><small data-error="message">@error('message'){{ $message }}@enderror</small></label>
+                <div class="contact-honeypot" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+                <input type="hidden" name="started_at" value="{{ now()->timestamp }}">
+                <button type="submit" data-submit-button><span>Send message</span><i>↗</i></button>
+            </form>
+        @endif
     </div>
 </section>
 @endsection

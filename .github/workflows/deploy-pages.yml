@@ -1,0 +1,110 @@
+name: Deploy Portfolio to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build static Laravel portfolio
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite, gd
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.20.1'
+          cache: npm
+
+      - name: Prepare Pages environment
+        shell: bash
+        run: |
+          cp deploy/github-pages.env .env
+          touch database/database.sqlite
+          echo "APP_URL=${{ steps.pages.outputs.base_url }}" >> "$GITHUB_ENV"
+          echo "ASSET_URL=${{ steps.pages.outputs.base_url }}" >> "$GITHUB_ENV"
+          echo "PORTFOLIO_EMAIL=${{ vars.PORTFOLIO_EMAIL }}" >> "$GITHUB_ENV"
+          echo "STATIC_CONTACT_ENDPOINT=${{ vars.STATIC_CONTACT_ENDPOINT }}" >> "$GITHUB_ENV"
+          echo "GITHUB_PAGES_CNAME=${{ vars.GITHUB_PAGES_CNAME }}" >> "$GITHUB_ENV"
+          echo "APP_COMMIT_SHA=${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Generate application key
+        run: php artisan key:generate --force
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Run automated tests
+        run: php artisan test
+
+      - name: Build deployment content database
+        shell: bash
+        run: |
+          php artisan migrate:fresh --seed --force
+          if [ -f content/portfolio.json ]; then
+            php artisan portfolio:content-import --replace --force
+          fi
+
+      - name: Export Laravel pages
+        run: php artisan portfolio:export-static --output=storage/app/static-export --base-url="${{ steps.pages.outputs.base_url }}"
+
+      - name: Validate generated site
+        shell: bash
+        run: |
+          test -s storage/app/static-export/index.html
+          test -s storage/app/static-export/404.html
+          test -s storage/app/static-export/sitemap.xml
+          if [ -d storage/app/static-export/projects ]; then
+            find storage/app/static-export/projects -name index.html -type f -print -quit | grep -q .
+          fi
+          test -d storage/app/static-export/build/assets
+          ! grep -R "http://127.0.0.1\|http://localhost" storage/app/static-export --include='*.html'
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: storage/app/static-export
+          include-hidden-files: true
+
+  deploy:
+    name: Publish GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
