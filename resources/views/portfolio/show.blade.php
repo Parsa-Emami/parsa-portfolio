@@ -1,6 +1,6 @@
 @extends('layouts.portfolio')
 
-@section('title', $project->title . ' — Parsa Emami')
+@section('title', $project->title . ' — ' . ($settings['name'] ?? config('portfolio.name')))
 
 @section('content')
     <article class="case-study" style="--project-accent: {{ $project->accent }}">
@@ -32,8 +32,12 @@
 
         <section class="case-visual section-shell" data-project>
             <div class="case-canvas">
-                <div class="project-grid"></div>
-                <div class="case-monogram">{{ strtoupper(mb_substr($project->title, 0, 2)) }}</div>
+                @if ($project->cover_image)
+                    <img class="case-cover-image" src="{{ Storage::url($project->cover_image) }}" alt="{{ $project->title }} cover">
+                @else
+                    <div class="project-grid"></div>
+                    <div class="case-monogram">{{ strtoupper(mb_substr($project->title, 0, 2)) }}</div>
+                @endif
             </div>
         </section>
 

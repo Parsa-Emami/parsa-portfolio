@@ -44,28 +44,26 @@ class Project extends Model
     protected static function booted(): void
     {
         static::saving(function (Project $project): void {
-            if (blank($project->slug) || $project->isDirty('title')) {
-                $baseSlug = Str::slug($project->title);
-                $slug = $baseSlug;
-                $counter = 2;
+            $baseSlug = Str::slug($project->slug ?: $project->title) ?: 'project';
+            $slug = $baseSlug;
+            $counter = 2;
 
-                while (static::withTrashed()
-                    ->where('slug', $slug)
-                    ->when(
-                        $project->exists,
-                        fn (Builder $query) => $query->where(
-                            $project->getKeyName(),
-                            '!=',
-                            $project->getKey()
-                        )
+            while (static::withTrashed()
+                ->where('slug', $slug)
+                ->when(
+                    $project->exists,
+                    fn (Builder $query) => $query->where(
+                        $project->getKeyName(),
+                        '!=',
+                        $project->getKey()
                     )
-                    ->exists()) {
-                    $slug = "{$baseSlug}-{$counter}";
-                    $counter++;
-                }
-
-                $project->slug = $slug;
+                )
+                ->exists()) {
+                $slug = "{$baseSlug}-{$counter}";
+                $counter++;
             }
+
+            $project->slug = $slug;
         });
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\SiteSetting;
 use Illuminate\View\View;
 
 class PortfolioController extends Controller
@@ -16,7 +17,10 @@ class PortfolioController extends Controller
             ->orderByDesc('published_at')
             ->get();
 
-        return view('portfolio.index', compact('projects'));
+        return view('portfolio.index', [
+            'projects' => $projects,
+            'settings' => SiteSetting::values(),
+        ]);
     }
 
     public function show(Project $project): View
@@ -32,6 +36,10 @@ class PortfolioController extends Controller
             ->orderBy('sort_order')
             ->first();
 
-        return view('portfolio.show', compact('project', 'nextProject'));
+        return view('portfolio.show', [
+            'project' => $project,
+            'nextProject' => $nextProject,
+            'settings' => SiteSetting::values(),
+        ]);
     }
 }

@@ -3,14 +3,14 @@ import Lenis from 'lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-
 gsap.registerPlugin(ScrollTrigger);
 
 document.documentElement.classList.add('js');
 
+const portfolioPage = document.querySelector('[data-portfolio-page]');
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-if (!reduceMotion) {
+if (portfolioPage && !reduceMotion) {
     const lenis = new Lenis({
         duration: 1.05,
         smoothWheel: true,
@@ -91,13 +91,12 @@ if (!reduceMotion) {
 const header = document.querySelector('[data-header]');
 let lastScrollY = window.scrollY;
 
-window.addEventListener('scroll', () => {
-    const currentScrollY = window.scrollY;
+if (header) {
+    window.addEventListener('scroll', () => {
+        const currentScrollY = window.scrollY;
 
-    if (header) {
         header.classList.toggle('is-scrolled', currentScrollY > 24);
         header.classList.toggle('is-hidden', currentScrollY > lastScrollY && currentScrollY > 180);
-    }
-
-    lastScrollY = currentScrollY;
-}, { passive: true });
+        lastScrollY = currentScrollY;
+    }, { passive: true });
+}
