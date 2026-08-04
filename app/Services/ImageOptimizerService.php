@@ -15,24 +15,24 @@ class ImageOptimizerService
         $disk->makeDirectory($directory);
 
         $dimensions = @getimagesize($file->getRealPath());
-        $width = $dimensions[0] ?? null;
-        $height = $dimensions[1] ?? null;
+        $width = isset($dimensions[0]) ? (int) $dimensions[0] : null;
+        $height = isset($dimensions[1]) ? (int) $dimensions[1] : null;
 
         if (! $this->canConvertToWebp($file)) {
-            $path = $file->store($directory, 'public');
-
-            return [
-                'path' => $path,
-                'thumbnail_path' => null,
-                'width' => $width,
-                'height' => $height,
-            ];
+            return $this->storeOriginal($file, $directory, $width, $height);
         }
 
         $image = $this->createImageResource($file);
 
-        if (! $image) {
-            throw new RuntimeException('The uploaded image could not be processed.');
+        /*
+         * Some images pass MIME / dimension validation but cannot be decoded by
+         * the particular GD + libpng build installed on the server. Optimisation
+         * is optional; a decoder mismatch must not turn a valid upload request
+         * into a 500 response. Preserve the original and continue without a
+         * generated thumbnail.
+         */
+        if (! $image || ! $width || ! $height) {
+            return $this->storeOriginal($file, $directory, $width, $height);
         }
 
         try {
@@ -40,14 +40,31 @@ class ImageOptimizerService
             $mainPath = "{$directory}/{$base}.webp";
             $thumbPath = "{$directory}/{$base}-thumb.webp";
 
-            [$main, $mainWidth, $mainHeight] = $this->resize($image, (int) $width, (int) $height, $maxWidth);
-            [$thumb, $thumbWidth, $thumbHeight] = $this->resize($image, (int) $width, (int) $height, 720);
+            [$main, $mainWidth, $mainHeight] = $this->resize(
+                $image,
+                $width,
+                $height,
+                $maxWidth,
+            );
 
-            $this->writeWebp($main, $mainPath, 86);
-            $this->writeWebp($thumb, $thumbPath, 80);
+            [$thumb] = $this->resize(
+                $image,
+                $width,
+                $height,
+                720,
+            );
 
-            imagedestroy($main);
-            imagedestroy($thumb);
+            try {
+                $this->writeWebp($main, $mainPath, 86);
+                $this->writeWebp($thumb, $thumbPath, 80);
+            } catch (\Throwable $exception) {
+                $disk->delete([$mainPath, $thumbPath]);
+
+                throw $exception;
+            } finally {
+                imagedestroy($main);
+                imagedestroy($thumb);
+            }
 
             return [
                 'path' => $mainPath,
@@ -63,6 +80,26 @@ class ImageOptimizerService
     public function delete(?string ...$paths): void
     {
         Storage::disk('public')->delete(array_values(array_filter($paths)));
+    }
+
+    private function storeOriginal(
+        UploadedFile $file,
+        string $directory,
+        ?int $width,
+        ?int $height,
+    ): array {
+        $path = $file->store($directory, 'public');
+
+        if (! is_string($path) || $path === '') {
+            throw new RuntimeException('The uploaded image could not be stored.');
+        }
+
+        return [
+            'path' => $path,
+            'thumbnail_path' => null,
+            'width' => $width,
+            'height' => $height,
+        ];
     }
 
     private function canConvertToWebp(UploadedFile $file): bool
@@ -86,7 +123,9 @@ class ImageOptimizerService
         return match (strtolower($file->getClientOriginalExtension())) {
             'jpg', 'jpeg' => @imagecreatefromjpeg($file->getRealPath()),
             'png' => @imagecreatefrompng($file->getRealPath()),
-            'webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($file->getRealPath()) : false,
+            'webp' => function_exists('imagecreatefromwebp')
+                ? @imagecreatefromwebp($file->getRealPath())
+                : false,
             default => false,
         };
     }
@@ -101,12 +140,32 @@ class ImageOptimizerService
         $targetHeight = max(1, (int) round($height * ($targetWidth / $width)));
         $canvas = imagecreatetruecolor($targetWidth, $targetHeight);
 
+        if (! $canvas) {
+            throw new RuntimeException('Could not allocate an image canvas.');
+        }
+
         imagealphablending($canvas, false);
         imagesavealpha($canvas, true);
+
         $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
         imagefilledrectangle($canvas, 0, 0, $targetWidth, $targetHeight, $transparent);
 
-        imagecopyresampled($canvas, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+        if (! imagecopyresampled(
+            $canvas,
+            $source,
+            0,
+            0,
+            0,
+            0,
+            $targetWidth,
+            $targetHeight,
+            $width,
+            $height,
+        )) {
+            imagedestroy($canvas);
+
+            throw new RuntimeException('Could not resize the uploaded image.');
+        }
 
         return [$canvas, $targetWidth, $targetHeight];
     }
@@ -115,11 +174,22 @@ class ImageOptimizerService
     {
         $temp = tempnam(sys_get_temp_dir(), 'portfolio-webp-');
 
-        if ($temp === false || ! imagewebp($image, $temp, $quality)) {
-            throw new RuntimeException('Could not encode the uploaded image.');
+        if ($temp === false) {
+            throw new RuntimeException('Could not create a temporary image file.');
         }
 
-        Storage::disk('public')->put($path, file_get_contents($temp));
-        @unlink($temp);
+        try {
+            if (! imagewebp($image, $temp, $quality)) {
+                throw new RuntimeException('Could not encode the uploaded image.');
+            }
+
+            $contents = file_get_contents($temp);
+
+            if ($contents === false || ! Storage::disk('public')->put($path, $contents)) {
+                throw new RuntimeException('Could not store the optimized image.');
+            }
+        } finally {
+            @unlink($temp);
+        }
     }
 }
