@@ -13,4 +13,12 @@
         @yield('content')
     </main>
 </body>
+<body>
+    <main class="main-content">
+        @yield('content')
+    </main>
+
+    {{-- المان کرسر کاستوم --}}
+    <div class="c-cursor"></div>
+</body>
 </html>

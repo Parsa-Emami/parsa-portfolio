@@ -1,10 +1,16 @@
 import AppCore from './core/App';
 import ImageParallax from './animations/ImageParallax';
+import TextReveal from './animations/TextReveal';
+import Cursor from './components/Cursor';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // راه‌اندازی اسکرول نرم
+    // 1. هسته (Lenis)
     new AppCore();
 
-    // راه‌اندازی انیمیشن پروژه‌ها
+    // 2. اجزای سراسری (Cursor)
+    new Cursor();
+
+    // 3. انیمیشن‌ها
+    new TextReveal();
     new ImageParallax();
 });

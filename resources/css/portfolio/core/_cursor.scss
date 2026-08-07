@@ -1,0 +1,30 @@
+// مخفی کردن کرسر پیش‌فرض در کل سایت (برای دسکتاپ)
+@media (pointer: fine) {
+    body {
+        cursor: none;
+    }
+    a, button {
+        cursor: none;
+    }
+}
+
+.c-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    background-color: var(--color-text);
+    border-radius: 50%;
+    pointer-events: none; // بسیار مهم: تا جلوی کلیک‌ها را نگیرد
+    z-index: 9999;
+    mix-blend-mode: difference; // ایجاد افکت نگاتیو روی پس‌زمینه‌های روشن
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    
+    // وقتی روی یک لینک می‌رود بزرگ می‌شود
+    &.is-hovering {
+        transform: scale(4);
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+}
