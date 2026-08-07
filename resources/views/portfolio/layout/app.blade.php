@@ -7,10 +7,10 @@
     @vite(['resources/css/portfolio/global.scss', 'resources/js/portfolio/app.js'])
 </head>
 
-{{-- اضافه کردن کلاس is-loading به صورت پیش‌فرض --}}
-<body class="is-loading">
+{{-- data-barba="wrapper" کل سایت را در بر می‌گیرد --}}
+<body class="is-loading" data-barba="wrapper">
     
-    {{-- ساختار پرلودر در بالاترین نقطه بادی --}}
+    {{-- پرلودر سایت (فاز ۶) --}}
     <div class="c-preloader">
         <div class="c-preloader__bottom">
             <span class="c-preloader__name">Parsa Emami © 2024</span>
@@ -18,10 +18,15 @@
         </div>
     </div>
 
-    <main class="main-content">
+    {{-- پرده ترانزیشن صفحات (فاز ۷) --}}
+    <div class="c-transition-overlay"></div>
+
+    {{-- data-barba="container" فقط محتوای این بخش با رفتن به صفحه دیگر عوض می‌شود --}}
+    <main class="main-content" data-barba="container" data-barba-namespace="home">
         @yield('content')
     </main>
 
+    {{-- کرسر کاستوم --}}
     <div class="c-cursor"></div>
 </body>
 </html>

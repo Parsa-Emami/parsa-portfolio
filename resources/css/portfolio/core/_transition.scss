@@ -1,0 +1,11 @@
+/* این پرده به صورت پیش‌فرض در پایین صفحه (خارج از دید) منتظر است */
+.c-transition-overlay {
+    position: fixed;
+    top: 100%; 
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--color-bg);
+    z-index: 99998; /* دقیقا زیر پرلودر */
+    pointer-events: none;
+}
