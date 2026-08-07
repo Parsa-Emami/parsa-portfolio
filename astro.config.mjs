@@ -7,7 +7,8 @@ const __dirname = dirname(__filename);
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://public.wodniack.dev',
+  site: 'https://parsa-emami.github.io',
+  base: '/parsa-portfolio',
 
   scopedStyleStrategy: 'class',
 
