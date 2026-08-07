@@ -1,18 +1,26 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: [
+                'resources/css/admin.css',
+                'resources/js/admin.js',
+                'resources/css/portfolio/global.scss',
+                'resources/js/portfolio/app.js',
+            ],
             refresh: true,
         }),
-        tailwindcss(),
     ],
-    server: {
-        watch: {
-            ignored: ['**/storage/framework/views/**'],
-        },
-    },
+    css: {
+        preprocessorOptions: {
+            scss: {
+                additionalData: `
+                    @use "resources/css/portfolio/variables-scss/_breakpoints" as *;
+                    @use "resources/css/portfolio/helpers/_mixins" as *;
+                `
+            }
+        }
+    }
 });

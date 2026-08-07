@@ -1,0 +1,47 @@
+.s-projects {
+    padding: 10vh 5vw;
+
+    &__grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4rem;
+
+        @include mq('tablet') {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+}
+
+.c-project {
+    display: block;
+    cursor: pointer;
+
+    &__image-wrapper {
+        position: relative;
+        width: 100%;
+        height: 60vh;
+        overflow: hidden; 
+        border-radius: 8px;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    &__img {
+        width: 100%;
+        height: 120%; 
+        object-fit: cover;
+        will-change: transform;
+    }
+
+    &__info {
+        margin-top: 1.5rem;
+    }
+
+    &__name {
+        font-size: 2rem;
+        margin: 0 0 0.5rem 0;
+    }
+
+    &:hover &__image-wrapper {
+        transform: scale(0.98);
+    }
+}
