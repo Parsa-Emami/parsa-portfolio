@@ -4,21 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parsa Emami - Portfolio</title>
-    
-    <!-- لود کردن فایل‌های کامپایل‌شده توسط Vite -->
     @vite(['resources/css/portfolio/global.scss', 'resources/js/portfolio/app.js'])
 </head>
-<body>
-    <main class="main-content">
-        @yield('content')
-    </main>
-</body>
-<body>
+
+{{-- اضافه کردن کلاس is-loading به صورت پیش‌فرض --}}
+<body class="is-loading">
+    
+    {{-- ساختار پرلودر در بالاترین نقطه بادی --}}
+    <div class="c-preloader">
+        <div class="c-preloader__bottom">
+            <span class="c-preloader__name">Parsa Emami © 2024</span>
+            <span class="c-preloader__counter">0%</span>
+        </div>
+    </div>
+
     <main class="main-content">
         @yield('content')
     </main>
 
-    {{-- المان کرسر کاستوم --}}
     <div class="c-cursor"></div>
 </body>
 </html>

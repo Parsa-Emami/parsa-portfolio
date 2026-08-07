@@ -1,0 +1,39 @@
+/* قفل کردن اسکرول روی بادی تا زمانی که لودینگ تمام شود */
+body.is-loading {
+    overflow: hidden;
+}
+
+.c-preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--color-bg);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 2rem 5vw;
+    color: var(--color-text);
+    
+    // کادر مربوط به درصد لودینگ و نام
+    &__bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+
+    &__counter {
+        font-size: clamp(3rem, 10vw, 8rem);
+        font-weight: 300;
+        line-height: 0.8;
+    }
+
+    &__name {
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.5;
+    }
+}

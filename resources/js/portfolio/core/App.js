@@ -8,6 +8,7 @@ export default class App {
     constructor() {
         this.initLenis();
         this.initRAF();
+        this.bindEvents();
     }
 
     initLenis() {
@@ -18,6 +19,9 @@ export default class App {
             smooth: true,
         });
 
+        // متوقف کردن اسکرول به صورت پیش‌فرض
+        this.lenis.stop();
+
         this.lenis.on('scroll', ScrollTrigger.update);
     }
 
@@ -26,5 +30,14 @@ export default class App {
             this.lenis.raf(time * 1000);
         });
         gsap.ticker.lagSmoothing(0);
+    }
+
+    bindEvents() {
+        // وقتی لودینگ تمام شد، اسکرول را فعال کن
+        window.addEventListener('app:ready', () => {
+            this.lenis.start();
+            // رفرش کردن موقعیت‌های اسکرول به خاطر تغییرات DOM
+            ScrollTrigger.refresh();
+        });
     }
 }
