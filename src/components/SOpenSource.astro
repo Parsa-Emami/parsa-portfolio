@@ -2,202 +2,213 @@
 import { openSourceProjects, profile } from '../data/portfolio'
 ---
 
-<section class="oss section" id="open-source" aria-labelledby="oss-title">
-  <div class="site-shell">
-    <div class="section-heading" data-reveal>
-      <span class="section-number">03</span>
-      <p class="section-kicker">Public code / GitHub</p>
-      <h2 id="oss-title">Open source projects that show how I structure, ship, and iterate.</h2>
+<section class="oss" id="open-source" aria-labelledby="oss-title">
+  <div class="oss__pin">
+    <div class="oss__top site-shell">
+      <div class="section-heading" data-reveal>
+        <span class="section-number">03</span>
+        <p class="section-kicker">OPEN SOURCE / PUBLIC CODE</p>
+        <h2 id="oss-title">Public repositories where the implementation can speak for itself.</h2>
+      </div>
+      <div class="oss__hint" data-reveal><span>DESKTOP</span><i>scroll → horizontal</i><span>MOBILE</span><i>stacked</i></div>
     </div>
 
-    <div class="oss__header" data-reveal>
-      <p>Public repositories are intentionally separated from enterprise work. Every project below links to code you can inspect directly.</p>
-      <a href={profile.github} target="_blank" rel="noopener noreferrer">github.com/Parsa-Emami <span aria-hidden="true">↗</span></a>
-    </div>
+    <div class="oss__viewport">
+      <div class="oss__track">
+        <div class="oss__lead-card">
+          <p>PUBLIC / 03 REPOSITORIES</p>
+          <strong>CODE<br/>YOU CAN<br/><em>INSPECT.</em></strong>
+          <a href={profile.github} target="_blank" rel="noopener noreferrer" data-magnetic data-cursor="GitHub">GITHUB PROFILE ↗</a>
+        </div>
 
-    <div class="oss__projects">
-      {
-        openSourceProjects.map((project) => (
-          <article class="oss-card" data-reveal>
-            <a class="oss-card__link" href={project.href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${project.name} on GitHub`}>
+        {openSourceProjects.map((project, index) => (
+          <a class="oss-card" href={project.href} target="_blank" rel="noopener noreferrer" data-cursor="Open repo">
+            <div class="oss-card__mesh" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <div class="oss-card__top">
               <span>{project.number}</span>
-              <span>VIEW SOURCE ↗</span>
-            </a>
-            <div class="oss-card__title-row">
-              <div>
-                <p>{project.subtitle}</p>
-                <h3>{project.name}</h3>
-              </div>
-              <span class="oss-card__github">GH</span>
+              <span>PUBLIC REPOSITORY ↗</span>
+            </div>
+            <div class="oss-card__title">
+              <h3>{project.name}</h3>
+              <p>{project.subtitle}</p>
             </div>
             <p class="oss-card__description">{project.description}</p>
-            <ul>
-              {project.highlights.map((highlight) => <li>{highlight}</li>)}
-            </ul>
-            <div class="oss-card__stack">
-              {project.stack.map((item) => <span>{item}</span>)}
-            </div>
-          </article>
-        ))
-      }
+            <ul>{project.highlights.map((item) => <li>{item}</li>)}</ul>
+            <div class="oss-card__stack">{project.stack.map((item) => <span>{item}</span>)}</div>
+            <div class="oss-card__index" aria-hidden="true">0{index + 1}</div>
+          </a>
+        ))}
+
+        <div class="oss__end-card">
+          <span>END / PUBLIC WORK</span>
+          <p>Private systems show decisions.<br/>Public repositories show code.</p>
+          <i>↘</i>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <style lang="scss">
   .oss {
-    &__header {
+    position: relative;
+    min-height: 100svh;
+    overflow: hidden;
+    background: color(primary);
+
+    &__pin { min-height: 100svh; padding-top: clamp(6rem, 9vh, 8rem); }
+    &__top { position: relative; z-index: 4; }
+    .section-heading h2 { max-width: 70rem; }
+    &__hint {
       display: flex;
-      justify-content: space-between;
-      gap: 2rem;
-      align-items: flex-end;
-      margin-top: clamp(3rem, 6vw, 5rem);
-      padding-top: 1.25rem;
-      border-top: 1px solid color(shadow);
+      gap: .7rem;
+      margin-top: 1.4rem;
+      color: color(muted);
+      font: 400 .56rem/1 font-family(fraktion);
+      letter-spacing: .06em;
+      span { color: color(accent); font-weight: 700; }
+      i { margin-right: 1rem; }
+    }
+    &__viewport { margin-top: clamp(2.5rem, 6vh, 5rem); overflow: visible; }
+    &__track {
+      display: flex;
+      gap: clamp(1rem, 2vw, 2rem);
+      width: max-content;
+      padding-left: max(clamp(1rem, 2.5vw, 2.5rem), calc((100vw - 1540px) / 2));
+      padding-right: 8vw;
+      will-change: transform;
+    }
 
-      p {
-        max-width: 42rem;
-        margin: 0;
-        color: color(muted);
+    &__lead-card,
+    &__end-card,
+    .oss-card {
+      flex: 0 0 min(72vw, 56rem);
+      min-height: min(61vh, 39rem);
+      border: 1px solid color(shadow);
+    }
+
+    &__lead-card {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: clamp(1.5rem, 3vw, 3rem);
+      background: color(accent);
+      color: color(white);
+      p { margin: 0; font: 700 .6rem/1 font-family(fraktion); letter-spacing: .08em; }
+      strong {
+        align-self: center;
+        font: 700 clamp(4rem, 8.7vw, 9rem)/.71 font-family(bigger);
+        letter-spacing: -.065em;
+        em { color: transparent; font-style: normal; -webkit-text-stroke: 1px color(white); }
       }
-
       a {
-        color: color(secondary);
-        font: 700 0.72rem / 1.2 font-family(fraktion);
+        justify-self: start;
+        padding: .95rem 1.1rem;
+        border: 1px solid color(white);
+        color: color(white);
+        font: 700 .62rem/1 font-family(fraktion);
+        letter-spacing: .06em;
         text-decoration: none;
-        text-transform: uppercase;
       }
     }
 
-    &__projects {
+    &__end-card {
+      position: relative;
       display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 1rem;
-      margin-top: clamp(4rem, 8vw, 8rem);
+      align-content: space-between;
+      padding: clamp(1.5rem, 3vw, 3rem);
+      background: color(secondary);
+      color: color(primary);
+      span { font: 700 .6rem/1 font-family(fraktion); letter-spacing: .08em; }
+      p { max-width: 34rem; margin: auto 0; font: 200 clamp(2.5rem, 5vw, 5.4rem)/.92 font-family(editorial); letter-spacing: -.055em; }
+      i { justify-self: end; align-self: end; color: color(accent); font-size: 3rem; }
     }
   }
 
   .oss-card {
     position: relative;
-    grid-column: span 4;
-    min-height: 39rem;
-    padding: clamp(1.2rem, 2vw, 1.8rem);
-    border: 1px solid color(shadow);
+    display: grid;
+    grid-template-rows: auto auto auto 1fr auto;
+    padding: clamp(1.4rem, 2.7vw, 2.7rem);
+    overflow: hidden;
     background: color(primary);
-    transition: transform 220ms ease, box-shadow 220ms ease;
+    color: color(secondary);
+    text-decoration: none;
+    transition: border-color .3s ease;
 
-    &:nth-child(2) { transform: translateY(3rem); }
+    &:hover { border-color: color(accent); }
+    &:hover .oss-card__mesh { transform: scale(1.08) rotate(3deg); }
+    &:hover .oss-card__index { color: color(accent); transform: translateY(-.08em); }
 
-    &:hover {
-      transform: translateY(-0.4rem);
-      box-shadow: 0.8rem 0.8rem 0 color(shadow);
-    }
-
-    &:nth-child(2):hover { transform: translateY(2.6rem); }
-
-    &__link {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      padding-bottom: 0.8rem;
-      border-bottom: 1px solid color(shadow);
-      color: color(accent);
-      font: 700 0.62rem / 1 font-family(fraktion);
-      letter-spacing: 0.06em;
-      text-decoration: none;
-    }
-
-    &__title-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      align-items: flex-start;
-      margin-top: 4rem;
-
-      p {
-        margin: 0 0 0.7rem;
-        color: color(muted);
-        font: 400 0.68rem / 1.2 font-family(fraktion);
-        text-transform: uppercase;
-      }
-
-      h3 {
-        margin: 0;
-        font: 700 clamp(2.6rem, 4.8vw, 5rem) / 0.8 font-family(bigger);
-        letter-spacing: -0.055em;
-        text-transform: uppercase;
-      }
-    }
-
-    &__github {
-      display: grid;
-      place-items: center;
-      flex: 0 0 auto;
-      width: 2.4rem;
-      height: 2.4rem;
+    &__mesh {
+      position: absolute;
+      top: -28%;
+      right: -12%;
+      width: 47%;
+      aspect-ratio: 1;
       border: 1px solid color(shadow);
       border-radius: 50%;
-      color: color(accent);
-      font: 700 0.62rem / 1 font-family(fraktion);
+      transition: transform .7s cubic-bezier(.22,1,.36,1);
+      i { position: absolute; inset: 13%; border: 1px solid color(shadow); border-radius: 50%; }
+      i:nth-child(2) { inset: 27%; }
+      i:nth-child(3) { inset: 41%; border-color: color(accent); }
+      i:nth-child(4) { top: 50%; right: -35%; bottom: auto; left: -35%; height: 1px; border: 0; border-top: 1px solid color(shadow); border-radius: 0; }
     }
-
-    &__description {
-      margin: 1.6rem 0 0;
+    &__top {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      gap: 2rem;
       color: color(muted);
-      line-height: 1.52;
+      font: 700 .58rem/1 font-family(fraktion);
+      letter-spacing: .07em;
+      span:first-child { color: color(accent); }
     }
-
+    &__title {
+      position: relative;
+      z-index: 2;
+      margin-top: clamp(2rem, 5vh, 4rem);
+      h3 { margin: 0; font: 700 clamp(4rem, 8vw, 8rem)/.72 font-family(bigger); letter-spacing: -.07em; text-transform: uppercase; }
+      p { margin: .8rem 0 0; color: color(accent); font: 200 clamp(1.2rem, 2vw, 2rem)/1 font-family(editorial); }
+    }
+    &__description { position: relative; z-index: 2; max-width: 42rem; margin: 1.6rem 0 0; color: color(muted); font-size: .91rem; line-height: 1.52; }
     ul {
+      position: relative;
+      z-index: 2;
       display: grid;
-      gap: 0.7rem;
-      margin: 1.6rem 0 0;
-      padding: 1.4rem 0 0;
-      border-top: 1px dashed color(shadow);
+      align-self: end;
+      gap: .55rem;
+      max-width: 46rem;
+      margin: 1.4rem 0 0;
+      padding: 1rem 0 0;
+      border-top: 1px solid color(shadow);
       list-style: none;
     }
-
-    li {
-      position: relative;
-      padding-left: 1.15rem;
-      font-size: 0.82rem;
-      line-height: 1.45;
-
-      &:before {
-        position: absolute;
-        top: 0.58em;
-        left: 0;
-        width: 0.34rem;
-        height: 0.34rem;
-        background: color(accent);
-        content: '';
-      }
-    }
-
-    &__stack {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-      margin-top: 2rem;
-
-      span {
-        padding: 0.42rem 0.55rem;
-        border: 1px solid color(shadow);
-        font: 400 0.58rem / 1 font-family(fraktion);
-        text-transform: uppercase;
-      }
+    li { position: relative; padding-left: 1rem; font-size: .76rem; line-height: 1.42; &:before { position: absolute; top: .55em; left: 0; width: .28rem; height: .28rem; background: color(accent); content: ''; } }
+    &__stack { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: .35rem; margin-top: 1.4rem; span { padding: .38rem .48rem; border: 1px solid color(shadow); font: 400 .5rem/1 font-family(fraktion); text-transform: uppercase; } }
+    &__index {
+      position: absolute;
+      right: .01em;
+      bottom: -.17em;
+      z-index: 0;
+      color: color(shadow, .65);
+      font: 700 clamp(8rem, 18vw, 18rem)/.7 font-family(bigger);
+      letter-spacing: -.07em;
+      transition: color .4s ease, transform .4s ease;
     }
   }
 
-  @media (max-width: 980px) {
-    .oss-card {
-      grid-column: span 6;
-      &:nth-child(2) { transform: none; }
-      &:nth-child(2):hover { transform: translateY(-0.4rem); }
-    }
+  @media (max-width: 900px) {
+    .oss { overflow: visible; padding-bottom: 6rem; }
+    .oss__pin { min-height: auto; }
+    .oss__track { display: grid; width: auto; padding: 0 clamp(1rem, 2.5vw, 2.5rem); }
+    .oss__lead-card, .oss__end-card, .oss-card { min-height: 35rem; }
+    .oss__lead-card, .oss__end-card, .oss-card { flex: none; }
   }
-
-  @media (max-width: 650px) {
-    .oss__header { flex-direction: column; align-items: flex-start; }
-    .oss-card { grid-column: 1 / -1; min-height: auto; }
+  @media (max-width: 600px) {
+    .oss__hint { display: none; }
+    .oss__lead-card, .oss__end-card, .oss-card { min-height: 31rem; }
+    .oss-card__title h3 { font-size: clamp(3.5rem, 18vw, 6rem); }
+    .oss-card ul { display: none; }
   }
 </style>

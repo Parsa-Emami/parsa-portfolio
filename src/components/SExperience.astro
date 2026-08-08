@@ -6,47 +6,49 @@ import { education, experience, researchThemes } from '../data/portfolio'
   <div class="site-shell">
     <div class="section-heading" data-reveal>
       <span class="section-number">04</span>
-      <p class="section-kicker">Experience / Education</p>
-      <h2 id="experience-title">Engineering practice reinforced by security work, teaching, and AI study.</h2>
+      <p class="section-kicker">EXPERIENCE / EDUCATION</p>
+      <h2 id="experience-title">A path shaped by building, testing, teaching and thinking like an attacker.</h2>
     </div>
 
-    <div class="experience__layout">
-      <div class="experience__timeline">
-        {
-          experience.map((item, index) => (
-            <article class="timeline-item" data-reveal>
-              <div class="timeline-item__number">{String(index + 1).padStart(2, '0')}</div>
+    <div class="experience__grid">
+      <div class="experience__timeline-wrap">
+        <div class="experience__line"><i data-timeline-line></i></div>
+        <div class="experience__timeline">
+          {experience.map((item, index) => (
+            <article class="timeline-item" data-cursor={item.role}>
+              <span class="timeline-item__node" aria-hidden="true"></span>
+              <div class="timeline-item__index">{String(index + 1).padStart(2, '0')}</div>
               <div class="timeline-item__period">{item.period}</div>
               <div class="timeline-item__content">
                 <h3>{item.role}</h3>
-                <p class="timeline-item__org">{item.organization} · {item.mode}</p>
+                <p class="timeline-item__org">{item.organization} <span>/</span> {item.mode}</p>
                 <p class="timeline-item__description">{item.description}</p>
               </div>
             </article>
-          ))
-        }
+          ))}
+        </div>
       </div>
 
       <aside class="experience__side">
-        <section class="experience__panel" data-reveal>
-          <p class="experience__panel-label">EDUCATION</p>
+        <div class="experience-panel experience-panel--education" data-reveal>
+          <div class="experience-panel__label"><span>ACADEMIC LAYER</span><i>01</i></div>
           {education.map((item) => (
-            <div class="education-item">
+            <article class="education-item">
               <span>{item.period}</span>
               <h3>{item.degree}</h3>
               <p>{item.school}</p>
-            </div>
+            </article>
           ))}
-        </section>
+        </div>
 
-        <section class="experience__panel experience__panel--accent" data-reveal>
-          <p class="experience__panel-label">SECURITY / RESEARCH THEMES</p>
+        <div class="experience-panel experience-panel--research" data-reveal>
+          <div class="experience-panel__label"><span>RESEARCH / SECURITY SIGNALS</span><i>02</i></div>
           <div class="research-list">
             {researchThemes.map((theme, index) => (
-              <div><span>{String(index + 1).padStart(2, '0')}</span><p>{theme}</p></div>
+              <div><span>{String(index + 1).padStart(2, '0')}</span><p>{theme}</p><i>↗</i></div>
             ))}
           </div>
-        </section>
+        </div>
       </aside>
     </div>
   </div>
@@ -54,140 +56,117 @@ import { education, experience, researchThemes } from '../data/portfolio'
 
 <style lang="scss">
   .experience {
-    background: color(primary);
+    position: relative;
+    overflow: hidden;
+    &:after {
+      position: absolute;
+      top: 24%;
+      left: -18vw;
+      width: 42vw;
+      aspect-ratio: 1;
+      border: 1px solid color(shadow);
+      border-radius: 50%;
+      box-shadow: 0 0 0 7vw color(shadow, .06), 0 0 0 14vw color(shadow, .03);
+      content: '';
+      pointer-events: none;
+    }
 
-    &__layout {
+    &__grid {
+      position: relative;
+      z-index: 2;
       display: grid;
-      grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
-      gap: clamp(2rem, 6vw, 6rem);
+      grid-template-columns: minmax(0, 1.2fr) minmax(330px, .8fr);
+      gap: clamp(3rem, 7vw, 7rem);
       margin-top: clamp(4rem, 8vw, 8rem);
     }
-
-    &__timeline { border-top: 1px solid color(shadow); }
-
+    &__timeline-wrap { position: relative; }
+    &__line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 1.12rem;
+      width: 1px;
+      background: color(shadow);
+      i { display: block; width: 100%; height: 100%; background: color(accent); transform-origin: top; }
+    }
+    &__timeline { position: relative; }
     &__side {
-      display: grid;
-      align-content: start;
-      gap: 1rem;
       position: sticky;
       top: 7rem;
-      height: fit-content;
-    }
-
-    &__panel {
-      padding: 1.4rem;
-      border: 1px solid color(shadow);
-
-      &--accent {
-        background: color(secondary);
-        color: color(primary);
-
-        .experience__panel-label { color: color(accent); }
-      }
-    }
-
-    &__panel-label {
-      margin: 0 0 2rem;
-      color: color(accent);
-      font: 700 0.62rem / 1 font-family(fraktion);
-      letter-spacing: 0.07em;
+      align-self: start;
+      display: grid;
+      gap: 1rem;
     }
   }
 
   .timeline-item {
+    position: relative;
     display: grid;
-    grid-template-columns: 3rem minmax(8.5rem, 0.35fr) minmax(0, 1fr);
-    gap: 1.25rem;
-    padding: 2rem 0;
+    grid-template-columns: 3rem minmax(8.8rem, .3fr) minmax(0, 1fr);
+    gap: 1.2rem;
+    padding: 2.6rem 0 2.6rem 3.8rem;
     border-bottom: 1px solid color(shadow);
-
-    &__number,
-    &__period {
-      color: color(muted);
-      font: 400 0.65rem / 1.35 font-family(fraktion);
-      letter-spacing: 0.04em;
+    &:first-child { border-top: 1px solid color(shadow); }
+    &__node {
+      position: absolute;
+      top: 3rem;
+      left: .82rem;
+      z-index: 2;
+      width: .62rem;
+      height: .62rem;
+      border: 2px solid color(primary);
+      border-radius: 50%;
+      background: color(accent);
+      box-shadow: 0 0 0 1px color(accent);
     }
+    &__index, &__period { color: color(muted); font: 400 .62rem/1.35 font-family(fraktion); letter-spacing: .05em; }
+    &__index { color: color(accent); }
+    h3 { margin: 0; font: 200 clamp(2.1rem, 4vw, 4.3rem)/.92 font-family(editorial); letter-spacing: -.052em; }
+    &__org { margin: .75rem 0 0; font: 700 .66rem/1.35 font-family(fraktion); letter-spacing: .03em; span { color: color(accent); } }
+    &__description { max-width: 43rem; margin: 1rem 0 0; color: color(muted); font-size: .9rem; line-height: 1.55; }
+  }
 
-    &__number { color: color(accent); }
-
-    h3 {
-      margin: 0;
-      font: 200 clamp(1.8rem, 3vw, 3rem) / 1 font-family(editorial);
-      letter-spacing: -0.04em;
-    }
-
-    &__org {
-      margin: 0.65rem 0 0;
-      color: color(secondary);
-      font: 400 0.72rem / 1.35 font-family(fraktion);
-    }
-
-    &__description {
-      max-width: 42rem;
-      margin: 1rem 0 0;
-      color: color(muted);
-      font-size: 0.92rem;
-      line-height: 1.55;
-    }
+  .experience-panel {
+    border: 1px solid color(shadow);
+    padding: clamp(1.2rem, 2vw, 2rem);
+    background: color(primary, .94);
+    backdrop-filter: blur(16px);
+    &__label { display: flex; justify-content: space-between; margin-bottom: 2rem; color: color(accent); font: 700 .57rem/1 font-family(fraktion); letter-spacing: .08em; i { color: color(muted); } }
+    &--research { background: color(secondary); color: color(primary); .experience-panel__label i { color: color(primary, .45); } }
   }
 
   .education-item {
-    padding: 1.3rem 0;
+    padding: 1.4rem 0;
     border-top: 1px solid color(shadow);
-
-    &:last-child { padding-bottom: 0; }
-
-    span {
-      color: color(muted);
-      font: 400 0.62rem / 1 font-family(fraktion);
-    }
-
-    h3 {
-      margin: 1rem 0 0;
-      font: 200 1.55rem / 1.02 font-family(editorial);
-      letter-spacing: -0.035em;
-    }
-
-    p {
-      margin: 0.65rem 0 0;
-      color: color(muted);
-      font-size: 0.82rem;
-      line-height: 1.45;
-    }
+    span { color: color(muted); font: 400 .58rem/1 font-family(fraktion); }
+    h3 { margin: .9rem 0 0; font: 200 clamp(1.5rem, 2.4vw, 2.35rem)/.98 font-family(editorial); letter-spacing: -.04em; }
+    p { margin: .55rem 0 0; color: color(muted); font-size: .79rem; line-height: 1.4; }
   }
 
   .research-list {
     display: grid;
-
     div {
       display: grid;
-      grid-template-columns: 2rem 1fr;
-      gap: 0.75rem;
-      padding: 0.85rem 0;
-      border-top: 1px solid color(primary);
+      grid-template-columns: 2rem 1fr auto;
+      gap: .7rem;
+      align-items: center;
+      padding: .82rem 0;
+      border-top: 1px solid color(primary, .16);
     }
-
-    span {
-      color: color(accent);
-      font: 400 0.58rem / 1.3 font-family(fraktion);
-    }
-
-    p {
-      margin: 0;
-      font-size: 0.82rem;
-      line-height: 1.35;
-      text-transform: capitalize;
-    }
+    span { color: color(accent); font: 700 .54rem/1 font-family(fraktion); }
+    p { margin: 0; font-size: .79rem; line-height: 1.35; text-transform: capitalize; }
+    i { color: color(primary, .42); font-size: .8rem; }
   }
 
-  @media (max-width: 900px) {
-    .experience__layout { grid-template-columns: 1fr; }
+  @media (max-width: 960px) {
+    .experience__grid { grid-template-columns: 1fr; }
     .experience__side { position: static; grid-template-columns: 1fr 1fr; }
   }
-
   @media (max-width: 650px) {
-    .timeline-item { grid-template-columns: 2rem 1fr; }
+    .timeline-item { grid-template-columns: 2rem 1fr; padding-left: 2.8rem; }
     .timeline-item__content { grid-column: 2; }
+    .experience__line { left: .85rem; }
+    .timeline-item__node { left: .55rem; }
     .experience__side { grid-template-columns: 1fr; }
   }
 </style>

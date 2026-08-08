@@ -1,0 +1,618 @@
+<div class="motion-loader" data-motion-loader aria-hidden="true">
+  <div class="motion-loader__top">
+    <span>PE / PORTFOLIO SYSTEM</span>
+    <span data-loader-counter>000</span>
+  </div>
+  <div class="motion-loader__word" data-loader-word>
+    <span>PARSA</span><span>EMAMI</span>
+  </div>
+  <div class="motion-loader__rail"><span data-loader-rail></span></div>
+</div>
+
+<div class="motion-cursor" data-motion-cursor aria-hidden="true">
+  <span class="motion-cursor__dot"></span>
+  <span class="motion-cursor__ring"></span>
+  <span class="motion-cursor__label" data-cursor-label></span>
+</div>
+
+<div class="motion-progress" aria-hidden="true">
+  <span class="motion-progress__label">SCROLL</span>
+  <span class="motion-progress__rail"><i data-scroll-progress></i></span>
+  <span class="motion-progress__value" data-scroll-value>00</span>
+</div>
+
+<script>
+  import Lenis from 'lenis'
+  import { gsap } from 'gsap'
+  import { ScrollTrigger } from 'gsap/ScrollTrigger'
+  import { SplitText } from 'gsap/SplitText'
+
+  gsap.registerPlugin(ScrollTrigger, SplitText)
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+  const desktop = window.matchMedia('(min-width: 901px)')
+  const body = document.body
+  const loader = document.querySelector('[data-motion-loader]')
+  const loaderCounter = document.querySelector('[data-loader-counter]')
+  const loaderRail = document.querySelector('[data-loader-rail]')
+  const loaderWord = document.querySelector('[data-loader-word]')
+
+  let lenis
+
+  const bootSmoothScroll = () => {
+    if (reduceMotion) return
+    lenis = new Lenis({
+      duration: 1.15,
+      smoothWheel: true,
+      syncTouch: false,
+      wheelMultiplier: 0.92,
+      touchMultiplier: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    })
+    lenis.on('scroll', ScrollTrigger.update)
+    gsap.ticker.add((time) => lenis.raf(time * 1000))
+    gsap.ticker.lagSmoothing(0)
+    ;(window as any).__portfolioLenis = lenis
+    lenis.stop()
+  }
+
+  const runLoader = () => {
+    if (!loader) return Promise.resolve()
+    if (reduceMotion) {
+      loader.remove()
+      body.classList.add('is-ready')
+      return Promise.resolve()
+    }
+
+    return new Promise((resolve) => {
+      const counter = { value: 0 }
+      const tl = gsap.timeline({
+        defaults: { ease: 'expo.inOut' },
+        onComplete: () => {
+          loader.remove()
+          body.classList.add('is-ready')
+          lenis?.start()
+          resolve()
+        },
+      })
+
+      tl.to(counter, {
+        value: 100,
+        duration: 1.45,
+        ease: 'power3.out',
+        onUpdate: () => {
+          if (loaderCounter) loaderCounter.textContent = String(Math.round(counter.value)).padStart(3, '0')
+          if (loaderRail) loaderRail.style.transform = `scaleX(${counter.value / 100})`
+        },
+      })
+      tl.fromTo(loaderWord?.children || [], { yPercent: 120 }, { yPercent: 0, stagger: 0.08, duration: 1.05 }, 0.15)
+      tl.to(loaderWord?.children || [], { yPercent: -120, stagger: 0.04, duration: 0.8 }, 1.25)
+      tl.to(loader, { clipPath: 'inset(0 0 100% 0)', duration: 1.05 }, 1.45)
+    })
+  }
+
+  const initHeroField = () => {
+    const canvas = document.querySelector('[data-hero-field]')
+    if (!(canvas instanceof HTMLCanvasElement) || reduceMotion) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let width = 0
+    let height = 0
+    let raf = 0
+    let active = true
+    let time = 0
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0 }
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect()
+      width = rect.width
+      height = rect.height
+      canvas.width = Math.round(width * dpr)
+      canvas.height = Math.round(height * dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      mouse.x = mouse.tx = width * 0.5
+      mouse.y = mouse.ty = height * 0.5
+    }
+
+    const pointer = (event) => {
+      const rect = canvas.getBoundingClientRect()
+      mouse.tx = event.clientX - rect.left
+      mouse.ty = event.clientY - rect.top
+    }
+
+    const draw = () => {
+      if (!active) return
+      raf = requestAnimationFrame(draw)
+      time += 0.012
+      mouse.x += (mouse.tx - mouse.x) * 0.055
+      mouse.y += (mouse.ty - mouse.y) * 0.055
+      ctx.clearRect(0, 0, width, height)
+
+      const style = getComputedStyle(document.documentElement)
+      const stroke = style.getPropertyValue('--color-secondary').trim() || '#f1eee8'
+      const accent = style.getPropertyValue('--color-accent').trim() || '#ff3158'
+      const cols = Math.max(18, Math.floor(width / 30))
+      const rows = Math.max(11, Math.floor(height / 42))
+      const gapX = width / (cols - 1)
+      const gapY = height / (rows - 1)
+
+      ctx.lineWidth = 0.75
+      ctx.globalAlpha = 0.18
+      ctx.strokeStyle = stroke
+
+      for (let c = 0; c < cols; c++) {
+        ctx.beginPath()
+        for (let r = 0; r < rows; r++) {
+          const bx = c * gapX
+          const by = r * gapY
+          const dx = bx - mouse.x
+          const dy = by - mouse.y
+          const dist = Math.max(1, Math.hypot(dx, dy))
+          const force = Math.max(0, 1 - dist / 260)
+          const nx = bx + Math.sin(time * 1.35 + r * 0.48 + c * 0.12) * 14 + (dx / dist) * force * 38
+          const ny = by + Math.cos(time + c * 0.28 + r * 0.2) * 8 + (dy / dist) * force * 26
+          if (r === 0) ctx.moveTo(nx, ny)
+          else ctx.lineTo(nx, ny)
+        }
+        ctx.stroke()
+      }
+
+      ctx.globalAlpha = 0.82
+      ctx.fillStyle = accent
+      ctx.beginPath()
+      ctx.arc(mouse.x, mouse.y, 2.4, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.globalAlpha = 1
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      active = entry.isIntersecting
+      cancelAnimationFrame(raf)
+      if (active) draw()
+    }, { threshold: 0.01 })
+
+    resize()
+    window.addEventListener('resize', resize)
+    window.addEventListener('pointermove', pointer, { passive: true })
+    observer.observe(canvas)
+    draw()
+  }
+
+  const initCursor = () => {
+    if (coarsePointer || reduceMotion) return
+    const cursor = document.querySelector('[data-motion-cursor]')
+    const ring = cursor?.querySelector('.motion-cursor__ring')
+    const dot = cursor?.querySelector('.motion-cursor__dot')
+    const label = document.querySelector('[data-cursor-label]')
+    if (!cursor || !ring || !dot) return
+
+    const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+    const smooth = { x: pos.x, y: pos.y }
+
+    window.addEventListener('pointermove', (event) => {
+      pos.x = event.clientX
+      pos.y = event.clientY
+      gsap.set(dot, { x: pos.x, y: pos.y })
+    }, { passive: true })
+
+    gsap.ticker.add(() => {
+      smooth.x += (pos.x - smooth.x) * 0.16
+      smooth.y += (pos.y - smooth.y) * 0.16
+      gsap.set(ring, { x: smooth.x, y: smooth.y })
+      if (label) gsap.set(label, { x: smooth.x + 24, y: smooth.y - 24 })
+    })
+
+    document.querySelectorAll('[data-cursor]').forEach((element) => {
+      element.addEventListener('pointerenter', () => {
+        cursor.classList.add('is-active')
+        if (label) label.textContent = element.getAttribute('data-cursor') || ''
+      })
+      element.addEventListener('pointerleave', () => {
+        cursor.classList.remove('is-active')
+        if (label) label.textContent = ''
+      })
+    })
+  }
+
+  const initGlobalReveals = () => {
+    if (reduceMotion) return
+
+    document.querySelectorAll('[data-reveal]').forEach((element) => {
+      gsap.fromTo(element,
+        { y: 44, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 1.15,
+          ease: 'expo.out',
+          scrollTrigger: { trigger: element, start: 'top 88%', once: true },
+        }
+      )
+    })
+
+    document.querySelectorAll('[data-split-reveal]').forEach((element) => {
+      const split = new SplitText(element, { type: 'lines', linesClass: 'motion-line' })
+      split.lines.forEach((line) => {
+        const inner = document.createElement('span')
+        inner.className = 'motion-line__inner'
+        while (line.firstChild) inner.appendChild(line.firstChild)
+        line.appendChild(inner)
+      })
+      gsap.fromTo(element.querySelectorAll('.motion-line__inner'),
+        { yPercent: 118, rotate: 2 },
+        {
+          yPercent: 0,
+          rotate: 0,
+          duration: 1.35,
+          stagger: 0.075,
+          ease: 'expo.out',
+          scrollTrigger: { trigger: element, start: 'top 86%', once: true },
+        }
+      )
+    })
+
+    document.querySelectorAll('[data-parallax]').forEach((element) => {
+      const amount = Number(element.getAttribute('data-parallax')) || 12
+      gsap.fromTo(element, { yPercent: -amount }, {
+        yPercent: amount,
+        ease: 'none',
+        scrollTrigger: { trigger: element, start: 'top bottom', end: 'bottom top', scrub: 1 },
+      })
+    })
+  }
+
+  const initHeroMotion = () => {
+    if (reduceMotion) return
+    const hero = document.querySelector('.hero')
+    if (!hero) return
+    const lines = hero.querySelectorAll('[data-hero-line]')
+    const meta = hero.querySelectorAll('[data-hero-meta]')
+    const orbit = hero.querySelector('[data-hero-orbit]')
+
+    gsap.set(lines, { yPercent: 115, rotate: 3 })
+    gsap.set(meta, { opacity: 0, y: 24 })
+    gsap.timeline({ delay: 0.05 })
+      .to(lines, { yPercent: 0, rotate: 0, duration: 1.55, stagger: 0.12, ease: 'expo.out' })
+      .to(meta, { opacity: 1, y: 0, duration: 0.85, stagger: 0.08, ease: 'power3.out' }, '-=0.85')
+      .fromTo(orbit, { scale: 0.65, rotate: -45, opacity: 0 }, { scale: 1, rotate: 0, opacity: 1, duration: 1.3, ease: 'expo.out' }, '-=1.15')
+
+    gsap.to(hero.querySelector('[data-hero-title-a]'), {
+      xPercent: -8,
+      ease: 'none',
+      scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 1 },
+    })
+    gsap.to(hero.querySelector('[data-hero-title-b]'), {
+      xPercent: 7,
+      ease: 'none',
+      scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 1 },
+    })
+    gsap.to(hero.querySelector('[data-hero-orbit]'), {
+      rotate: 130,
+      yPercent: 35,
+      ease: 'none',
+      scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 1 },
+    })
+  }
+
+  const initAboutMotion = () => {
+    if (reduceMotion || !desktop.matches) return
+    const section = document.querySelector('.about')
+    if (!section) return
+    const words = section.querySelectorAll('[data-orbit-word]')
+    const core = section.querySelector('[data-about-core]')
+
+    gsap.to(words, {
+      rotate: (index) => (index % 2 ? -15 : 15),
+      xPercent: (index) => (index - 1) * 8,
+      ease: 'none',
+      scrollTrigger: { trigger: section, start: 'top bottom', end: 'bottom top', scrub: 1.2 },
+    })
+    gsap.to(core, {
+      rotate: 180,
+      ease: 'none',
+      scrollTrigger: { trigger: section, start: 'top bottom', end: 'bottom top', scrub: 1.4 },
+    })
+  }
+
+  const initSystemsMotion = () => {
+    if (reduceMotion || !desktop.matches) return
+    const section = document.querySelector('.systems')
+    const pin = section?.querySelector('.systems__pin')
+    const cards = section?.querySelectorAll('.system-card')
+    const meter = section?.querySelector('[data-system-meter]')
+    if (!section || !pin || !cards?.length) return
+
+    gsap.set(cards, { transformOrigin: '50% 90%' })
+    cards.forEach((card, index) => {
+      if (index > 0) gsap.set(card, { yPercent: 112, rotate: 5 + index * 1.4, scale: 0.98 })
+    })
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: section,
+        start: 'top top',
+        end: () => `+=${Math.max(2400, cards.length * window.innerHeight * 0.95)}`,
+        pin,
+        scrub: 1,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+      },
+    })
+
+    cards.forEach((card, index) => {
+      if (index === 0) return
+      const previous = cards[index - 1]
+      tl.to(previous, { yPercent: -5, scale: 0.92, rotate: -1.5, opacity: 0.5, duration: 1, ease: 'none' })
+        .to(card, { yPercent: 0, scale: 1, rotate: 0, duration: 1, ease: 'none' }, '<')
+      if (meter) tl.to(meter, { scaleX: (index + 1) / cards.length, duration: 1, ease: 'none' }, '<')
+    })
+  }
+
+  const initOpenSourceMotion = () => {
+    if (reduceMotion || !desktop.matches) return
+    const section = document.querySelector('.oss')
+    const track = section?.querySelector('.oss__track')
+    if (!section || !track) return
+
+    const getDistance = () => Math.max(0, track.scrollWidth - window.innerWidth + 80)
+    const horizontalTween = gsap.to(track, {
+      x: () => -getDistance(),
+      ease: 'none',
+      scrollTrigger: {
+        trigger: section,
+        start: 'top top',
+        end: () => `+=${getDistance() * 1.35 + window.innerHeight * 0.6}`,
+        pin: section.querySelector('.oss__pin'),
+        scrub: 1,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+      },
+    })
+
+    section.querySelectorAll('.oss-card').forEach((card, index) => {
+      gsap.fromTo(card,
+        { rotate: index % 2 ? 2.5 : -2.5, y: index % 2 ? 26 : -18 },
+        {
+          rotate: 0,
+          y: 0,
+          ease: 'none',
+          scrollTrigger: { trigger: card, containerAnimation: horizontalTween, start: 'left 92%', end: 'center 58%', scrub: 1 },
+        }
+      )
+    })
+  }
+
+  const initExperienceMotion = () => {
+    const section = document.querySelector('.experience')
+    const line = section?.querySelector('[data-timeline-line]')
+    if (!section || !line || reduceMotion) return
+    gsap.fromTo(line, { scaleY: 0 }, {
+      scaleY: 1,
+      ease: 'none',
+      scrollTrigger: { trigger: section, start: 'top 70%', end: 'bottom 65%', scrub: 1 },
+    })
+
+    section.querySelectorAll('.timeline-item').forEach((item, index) => {
+      gsap.fromTo(item,
+        { x: index % 2 ? 42 : -18, opacity: 0.2 },
+        {
+          x: 0,
+          opacity: 1,
+          ease: 'power2.out',
+          scrollTrigger: { trigger: item, start: 'top 88%', end: 'top 62%', scrub: 0.7 },
+        }
+      )
+    })
+  }
+
+  const initCTAMotion = () => {
+    const section = document.querySelector('.cta')
+    if (!section || reduceMotion) return
+    const words = section.querySelectorAll('[data-cta-word]')
+    words.forEach((word, index) => {
+      gsap.fromTo(word,
+        { xPercent: index % 2 ? 38 : -38 },
+        {
+          xPercent: 0,
+          ease: 'none',
+          scrollTrigger: { trigger: section, start: 'top bottom', end: 'center center', scrub: 1 },
+        }
+      )
+    })
+  }
+
+  const initMagnetic = () => {
+    if (coarsePointer || reduceMotion) return
+    document.querySelectorAll('[data-magnetic]').forEach((element) => {
+      element.addEventListener('pointermove', (event) => {
+        const rect = element.getBoundingClientRect()
+        const x = event.clientX - rect.left - rect.width / 2
+        const y = event.clientY - rect.top - rect.height / 2
+        gsap.to(element, { x: x * 0.16, y: y * 0.16, duration: 0.35, ease: 'power2.out' })
+      })
+      element.addEventListener('pointerleave', () => {
+        gsap.to(element, { x: 0, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.45)' })
+      })
+    })
+  }
+
+  const initProgress = () => {
+    const bar = document.querySelector('[data-scroll-progress]')
+    const value = document.querySelector('[data-scroll-value]')
+    if (!bar || !value) return
+    const update = () => {
+      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
+      const progress = Math.min(1, Math.max(0, window.scrollY / max))
+      bar.style.transform = `scaleY(${progress})`
+      value.textContent = String(Math.round(progress * 100)).padStart(2, '0')
+    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+  }
+
+  const init = async () => {
+    bootSmoothScroll()
+    initHeroField()
+    initCursor()
+    initProgress()
+    await runLoader()
+    initHeroMotion()
+    initGlobalReveals()
+    initAboutMotion()
+    initSystemsMotion()
+    initOpenSourceMotion()
+    initExperienceMotion()
+    initCTAMotion()
+    initMagnetic()
+    requestAnimationFrame(() => ScrollTrigger.refresh())
+  }
+
+  init()
+
+  window.addEventListener('portfolio-theme-change', () => {
+    requestAnimationFrame(() => ScrollTrigger.refresh())
+  })
+</script>
+
+<style lang="scss" is:global>
+  body:not(.is-ready) { overflow: hidden; }
+
+  .motion-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: clamp(1.2rem, 2.4vw, 2.4rem);
+    background: color(accent);
+    color: color(white);
+    clip-path: inset(0 0 0 0);
+
+    &__top {
+      display: flex;
+      justify-content: space-between;
+      font: 700 0.64rem/1 font-family(fraktion);
+      letter-spacing: 0.08em;
+    }
+
+    &__word {
+      align-self: center;
+      display: grid;
+      overflow: hidden;
+      font: 700 clamp(5.5rem, 19vw, 18rem)/0.66 font-family(bigger);
+      letter-spacing: -0.075em;
+      text-transform: uppercase;
+
+      span { display: block; }
+      span:last-child { justify-self: end; }
+    }
+
+    &__rail {
+      height: 2px;
+      background: rgba(255,255,255,.24);
+      overflow: hidden;
+      span {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: color(white);
+        transform: scaleX(0);
+        transform-origin: left;
+      }
+    }
+  }
+
+  .motion-cursor {
+    position: fixed;
+    inset: 0;
+    z-index: 990;
+    pointer-events: none;
+    mix-blend-mode: difference;
+
+    &__dot,
+    &__ring {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    &__dot {
+      width: 5px;
+      height: 5px;
+      background: #fff;
+    }
+
+    &__ring {
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(255,255,255,.9);
+      transition: width .28s ease, height .28s ease, background .28s ease;
+    }
+
+    &__label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      color: #fff;
+      font: 700 .58rem/1 font-family(fraktion);
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    &.is-active .motion-cursor__ring {
+      width: 72px;
+      height: 72px;
+      background: rgba(255,255,255,.12);
+    }
+  }
+
+  .motion-progress {
+    position: fixed;
+    right: clamp(.8rem, 1.6vw, 1.6rem);
+    top: 50%;
+    z-index: 55;
+    display: grid;
+    grid-template-rows: auto 6rem auto;
+    gap: .7rem;
+    align-items: center;
+    justify-items: center;
+    transform: translateY(-50%);
+    color: color(muted);
+    font: 700 .52rem/1 font-family(fraktion);
+    letter-spacing: .09em;
+
+    &__label { writing-mode: vertical-rl; transform: rotate(180deg); }
+    &__rail {
+      position: relative;
+      width: 1px;
+      height: 100%;
+      background: color(shadow);
+      i {
+        position: absolute;
+        inset: 0;
+        display: block;
+        background: color(accent);
+        transform: scaleY(0);
+        transform-origin: top;
+      }
+    }
+  }
+
+  .motion-line { overflow: hidden; }
+  .motion-line__inner { display: block; will-change: transform; }
+
+  @media (pointer: coarse), (max-width: 900px) {
+    .motion-cursor, .motion-progress { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-loader { display: none; }
+    body:not(.is-ready) { overflow: auto; }
+  }
+</style>

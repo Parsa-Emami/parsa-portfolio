@@ -2,244 +2,231 @@
 import { systems } from '../data/portfolio'
 ---
 
-<section class="systems section" id="systems" aria-labelledby="systems-title">
-  <div class="site-shell">
-    <div class="section-heading" data-reveal>
-      <span class="section-number">02</span>
-      <p class="section-kicker">Selected systems / Enterprise work</p>
-      <h2 id="systems-title">Systems where business rules need to survive real production pressure.</h2>
-    </div>
+<section class="systems" id="systems" aria-labelledby="systems-title">
+  <div class="systems__pin">
+    <div class="site-shell systems__shell">
+      <div class="systems__header">
+        <div class="systems__heading-copy">
+          <div class="section-heading section-heading--dark" data-reveal>
+            <span class="section-number">02</span>
+            <p class="section-kicker">ENTERPRISE / PRIVATE SYSTEMS</p>
+            <h2 id="systems-title">Three systems. Three different kinds of complexity.</h2>
+          </div>
+          <p class="systems__intro" data-reveal>
+            These are private engineering products. The portfolio shows architecture, constraints and decisions — not confidential source code.
+          </p>
+          <div class="systems__meter" aria-hidden="true"><i data-system-meter></i></div>
+        </div>
 
-    <div class="systems__note" data-reveal>
-      <span class="systems__note-label">ACCESS MODEL</span>
-      <p>These are private or enterprise codebases. They are presented as engineering case studies rather than public repositories.</p>
-    </div>
+        <div class="systems__deck">
+          {systems.map((system, index) => (
+            <article class={`system-card system-card--${index + 1}`} data-cursor="Case study">
+              <div class="system-card__noise" aria-hidden="true"></div>
+              <header class="system-card__head">
+                <div><span>{system.number}</span><b>{system.type}</b></div>
+                <span class="system-card__access">{system.access}</span>
+              </header>
 
-    <div class="systems__list">
-      {
-        systems.map((system) => (
-          <article class="system-card" data-reveal>
-            <div class="system-card__rail">
-              <span>{system.number}</span>
-              <span>PRIVATE SYSTEM</span>
-            </div>
-
-            <div class="system-card__main">
-              <div class="system-card__topline">
-                <p>{system.type}</p>
-                <span>{system.access}</span>
+              <div class="system-card__title-row">
+                <h3>{system.name}</h3>
+                <span class="system-card__glyph" aria-hidden="true">{index === 0 ? '⌁' : index === 1 ? '⌘' : '⌬'}</span>
               </div>
-              <h3>{system.name}</h3>
+
               <p class="system-card__tagline">{system.tagline}</p>
-              <p class="system-card__description">{system.description}</p>
 
-              <div class="system-card__details">
-                <div>
-                  <p class="system-card__label">Engineering focus</p>
-                  <ul>
-                    {system.highlights.map((highlight) => <li>{highlight}</li>)}
-                  </ul>
-                </div>
-                <div>
-                  <p class="system-card__label">Stack / ecosystem</p>
-                  <div class="system-card__stack">
-                    {system.stack.map((item) => <span>{item}</span>)}
-                  </div>
-                </div>
+              <div class="system-card__body">
+                <p class="system-card__description">{system.description}</p>
+                <ul>
+                  {system.highlights.map((item) => <li>{item}</li>)}
+                </ul>
               </div>
-            </div>
-          </article>
-        ))
-      }
+
+              <footer class="system-card__foot">
+                <div class="system-card__stack">{system.stack.map((item) => <span>{item}</span>)}</div>
+                <div class="system-card__counter"><span>{String(index + 1).padStart(2, '0')}</span><i>/</i><span>{String(systems.length).padStart(2, '0')}</span></div>
+              </footer>
+            </article>
+          ))}
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <style lang="scss">
   .systems {
+    position: relative;
+    min-height: 100svh;
     background: color(secondary);
     color: color(primary);
 
-    :global(.section-heading) {
-      border-color: color(primary);
-    }
-
-    :global(.section-kicker),
-    :global(.section-number) {
-      color: color(accent);
-    }
-
-    &__note {
+    &__pin { min-height: 100svh; overflow: hidden; }
+    &__shell {
       display: grid;
-      grid-template-columns: 10rem minmax(0, 38rem);
-      gap: 2rem;
-      justify-content: end;
-      margin-top: 3rem;
-      padding-top: 1rem;
-      border-top: 1px solid color(primary);
-
-      p {
-        margin: 0;
-        opacity: 0.72;
-        font-size: 0.92rem;
-      }
+      grid-template-columns: minmax(260px, .42fr) minmax(0, 1fr);
+      gap: clamp(2rem, 5vw, 5rem);
+      min-height: 100svh;
+      padding-top: clamp(6.5rem, 10vh, 8.5rem);
+      padding-bottom: clamp(2rem, 5vh, 4rem);
     }
 
-    &__note-label {
-      color: color(accent);
-      font: 700 0.62rem / 1.3 font-family(fraktion);
-      letter-spacing: 0.07em;
+    &__header { display: contents; }
+    &__heading-copy { align-self: start; position: relative; z-index: 7; }
+    .section-heading {
+      grid-template-columns: 2.5rem 1fr;
+      border-top-color: color(primary, .2);
+      h2 { grid-column: 1 / -1; margin-top: 2rem; color: color(primary); font-size: clamp(2.8rem, 5.3vw, 5.9rem); }
+    }
+    &__intro {
+      max-width: 30rem;
+      margin: 2rem 0 0;
+      color: color(primary, .62);
+      font-size: .94rem;
+      line-height: 1.55;
+    }
+    &__meter {
+      width: 100%;
+      height: 2px;
+      margin-top: 2rem;
+      overflow: hidden;
+      background: color(primary, .15);
+      i { display: block; width: 100%; height: 100%; background: color(accent); transform: scaleX(.333); transform-origin: left; }
     }
 
-    &__list {
-      margin-top: clamp(4rem, 8vw, 8rem);
-      border-top: 1px solid color(primary);
+    &__deck {
+      position: relative;
+      align-self: center;
+      height: min(72vh, 49rem);
+      min-height: 35rem;
+      perspective: 1600px;
     }
   }
 
   .system-card {
+    position: absolute;
+    inset: 0;
     display: grid;
-    grid-template-columns: 8rem minmax(0, 1fr);
-    border-bottom: 1px solid color(primary);
+    grid-template-rows: auto auto auto 1fr auto;
+    padding: clamp(1.4rem, 2.4vw, 2.4rem);
+    border: 1px solid color(primary, .22);
+    overflow: hidden;
+    background: color(primary);
+    color: color(secondary);
+    box-shadow: 0 2rem 6rem rgba(0,0,0,.22);
+    will-change: transform;
 
-    &__rail {
+    &--2 { background: #141219; }
+    &--3 { background: #090a0d; }
+
+    &__noise {
+      position: absolute;
+      inset: 0;
+      opacity: .18;
+      background-image:
+        linear-gradient(color(secondary, .06) 1px, transparent 1px),
+        linear-gradient(90deg, color(secondary, .06) 1px, transparent 1px);
+      background-size: 3.4rem 3.4rem;
+      mask-image: linear-gradient(130deg, transparent 12%, #000 80%);
+    }
+
+    &__head,
+    &__title-row,
+    &__tagline,
+    &__body,
+    &__foot { position: relative; z-index: 2; }
+
+    &__head {
       display: flex;
-      flex-direction: column;
       justify-content: space-between;
       gap: 2rem;
-      padding: 1.5rem 1rem 1.5rem 0;
-      border-right: 1px solid color(primary);
-      color: color(accent);
-      font: 400 0.63rem / 1.1 font-family(fraktion);
-      letter-spacing: 0.06em;
-
-      span:last-child {
-        writing-mode: vertical-rl;
-        transform: rotate(180deg);
-        opacity: 0.75;
-      }
+      padding-bottom: 1rem;
+      border-bottom: 1px solid color(secondary, .18);
+      font: 700 .58rem/1.25 font-family(fraktion);
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      div { display: flex; gap: 1rem; }
+      div span { color: color(accent); }
+      div b { font-weight: 400; }
     }
+    &__access { color: color(secondary, .48); }
 
-    &__main {
-      padding: clamp(2rem, 5vw, 5rem) 0 clamp(4rem, 8vw, 7rem) clamp(1.25rem, 4vw, 4rem);
-    }
-
-    &__topline {
+    &__title-row {
       display: flex;
       justify-content: space-between;
-      gap: 1rem;
-      color: color(primary);
-      font: 400 0.66rem / 1.3 font-family(fraktion);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-
-      p { margin: 0; }
-      span { opacity: 0.55; text-align: right; }
+      align-items: flex-start;
+      margin-top: clamp(1.5rem, 4vh, 3rem);
+      h3 {
+        margin: 0;
+        font: 700 clamp(4.4rem, 9vw, 9.3rem)/.72 font-family(bigger);
+        letter-spacing: -.07em;
+        text-transform: uppercase;
+      }
     }
-
-    h3 {
-      margin: clamp(2rem, 4vw, 4rem) 0 0;
-      color: color(primary);
-      font: 700 clamp(4rem, 10vw, 10rem) / 0.75 font-family(bigger);
-      letter-spacing: -0.06em;
-      text-transform: uppercase;
-    }
-
-    &__tagline {
-      max-width: 64rem;
-      margin: 2.2rem 0 0;
-      font: 200 clamp(1.7rem, 3.2vw, 3.1rem) / 1.02 font-family(editorial);
-      letter-spacing: -0.04em;
-    }
-
-    &__description {
-      max-width: 50rem;
-      margin: 1.35rem 0 0;
-      opacity: 0.68;
-      font-size: 1rem;
-      line-height: 1.58;
-    }
-
-    &__details {
+    &__glyph {
       display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
-      gap: clamp(2rem, 7vw, 7rem);
-      margin-top: clamp(3rem, 6vw, 5rem);
-      padding-top: 1.5rem;
-      border-top: 1px solid color(primary);
-    }
-
-    &__label {
-      margin: 0 0 1.35rem;
+      place-items: center;
+      width: clamp(4rem, 7vw, 7rem);
+      aspect-ratio: 1;
+      border: 1px solid color(accent);
+      border-radius: 50%;
       color: color(accent);
-      font: 700 0.62rem / 1.3 font-family(fraktion);
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
+      font-size: clamp(1.5rem, 3vw, 3rem);
     }
-
-    ul {
+    &__tagline {
+      max-width: 42rem;
+      margin: 1.2rem 0 0;
+      color: color(accent);
+      font: 200 clamp(1.35rem, 2.4vw, 2.6rem)/1 font-family(editorial);
+      letter-spacing: -.035em;
+    }
+    &__body {
       display: grid;
-      gap: 0.85rem;
-      margin: 0;
-      padding: 0;
-      list-style: none;
+      grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr);
+      gap: clamp(2rem, 5vw, 5rem);
+      align-self: end;
+      margin-top: clamp(1.5rem, 3vh, 3rem);
+      padding-top: 1rem;
+      border-top: 1px solid color(secondary, .14);
     }
-
+    &__description {
+      margin: 0;
+      color: color(secondary, .58);
+      font-size: .9rem;
+      line-height: 1.52;
+    }
+    ul { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
     li {
       position: relative;
-      max-width: 52rem;
-      padding-left: 1.4rem;
-      opacity: 0.82;
-      font-size: 0.94rem;
-      line-height: 1.5;
-
-      &:before {
-        position: absolute;
-        top: 0.65em;
-        left: 0;
-        width: 0.45rem;
-        height: 1px;
-        background: color(accent);
-        content: '';
-      }
+      padding-left: 1.1rem;
+      font-size: .78rem;
+      line-height: 1.42;
+      &:before { position: absolute; top: .55em; left: 0; width: .3rem; height: .3rem; background: color(accent); content: ''; }
     }
-
-    &__stack {
+    &__foot {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-
-      span {
-        padding: 0.48rem 0.62rem;
-        border: 1px solid color(primary);
-        border-radius: 999px;
-        font: 400 0.64rem / 1 font-family(fraktion);
-      }
+      justify-content: space-between;
+      align-items: end;
+      gap: 2rem;
+      margin-top: 1.2rem;
+      padding-top: 1rem;
+      border-top: 1px solid color(secondary, .14);
     }
-
-    @media (max-width: 800px) {
-      grid-template-columns: 3rem minmax(0, 1fr);
-
-      &__rail span:last-child { display: none; }
-      &__details { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 600px) {
-      grid-template-columns: 1fr;
-
-      &__rail {
-        flex-direction: row;
-        border-right: 0;
-        border-bottom: 1px solid color(primary);
-      }
-
-      &__main { padding-left: 0; }
-      &__topline { flex-direction: column; }
-      &__topline span { text-align: left; }
-    }
+    &__stack { display: flex; flex-wrap: wrap; gap: .35rem; span { padding: .35rem .45rem; border: 1px solid color(secondary, .16); color: color(secondary, .6); font: 400 .5rem/1 font-family(fraktion); text-transform: uppercase; } }
+    &__counter { display: flex; gap: .35rem; color: color(secondary, .4); font: 700 .62rem/1 font-family(fraktion); span:first-child { color: color(accent); } }
   }
 
+  @media (max-width: 900px) {
+    .systems { padding: 6rem 0; }
+    .systems__pin { min-height: auto; overflow: visible; }
+    .systems__shell { grid-template-columns: 1fr; min-height: auto; padding-top: 0; padding-bottom: 0; }
+    .systems__deck { display: grid; gap: 1rem; height: auto; min-height: 0; perspective: none; }
+    .system-card { position: relative; inset: auto; min-height: 44rem; }
+  }
   @media (max-width: 600px) {
-    .systems__note { grid-template-columns: 1fr; gap: 0.75rem; }
+    .system-card { min-height: auto; }
+    .system-card__head { flex-direction: column; gap: .5rem; }
+    .system-card__title-row h3 { font-size: clamp(4rem, 20vw, 6.7rem); }
+    .system-card__body { grid-template-columns: 1fr; }
+    .system-card__foot { flex-direction: column; align-items: flex-start; }
   }
 </style>

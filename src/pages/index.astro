@@ -1,6 +1,7 @@
 ---
 import SiteHead from '../components/SiteHead.astro'
 import SiteFoot from '../components/SiteFoot.astro'
+import MotionSystem from '../components/MotionSystem.astro'
 import SHero from '../components/SHero.astro'
 import SAbout from '../components/SAbout.astro'
 import SWork from '../components/SWork.astro'
@@ -8,7 +9,6 @@ import SOpenSource from '../components/SOpenSource.astro'
 import SExperience from '../components/SExperience.astro'
 import SCTA from '../components/SCTA.astro'
 import { profile } from '../data/portfolio'
-
 import '../styles/global.scss'
 
 const base = import.meta.env.BASE_URL
@@ -29,23 +29,9 @@ const structuredData = {
     addressCountry: 'IR',
   },
   sameAs: [profile.linkedin, profile.github],
-  worksFor: {
-    '@type': 'Organization',
-    name: profile.company,
-  },
-  alumniOf: {
-    '@type': 'CollegeOrUniversity',
-    name: profile.university,
-  },
-  knowsAbout: [
-    'Software Engineering',
-    'Software Architecture',
-    'Cybersecurity',
-    'Red Teaming',
-    'Artificial Intelligence',
-    'Laravel',
-    'Software Testing',
-  ],
+  worksFor: { '@type': 'Organization', name: profile.company },
+  alumniOf: { '@type': 'CollegeOrUniversity', name: profile.university },
+  knowsAbout: ['Software Engineering', 'Software Architecture', 'Cybersecurity', 'Red Teaming', 'Artificial Intelligence', 'Laravel', 'Software Testing'],
 }
 ---
 
@@ -54,22 +40,18 @@ const structuredData = {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
-
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="author" content={profile.name} />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href={canonical} />
-
     <link rel="icon" type="image/png" href={`${base}icons/favicon-48x48.png`} sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href={`${base}icons/favicon.svg`} />
     <link rel="shortcut icon" href={`${base}icons/favicon.ico`} />
     <link rel="apple-touch-icon" sizes="180x180" href={`${base}icons/apple-touch-icon.png`} />
     <meta name="apple-mobile-web-app-title" content="Parsa Emami" />
-
     <meta name="theme-color" content="#0b0b0d" />
     <meta name="color-scheme" content="dark light" />
-
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
@@ -79,15 +61,13 @@ const structuredData = {
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-
     <link rel="preload" href={`${base}fonts/PPEditorialNew-Regular.woff2`} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={`${base}fonts/PPFraktionMono-Regular.woff2`} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={`${base}fonts/Bigger-Display.woff2`} as="font" type="font/woff2" crossorigin="anonymous" />
-
     <script type="application/ld+json" set:html={JSON.stringify(structuredData)}></script>
   </head>
-
   <body>
+    <MotionSystem />
     <SiteHead />
     <main>
       <SHero />
@@ -98,27 +78,5 @@ const structuredData = {
       <SCTA />
     </main>
     <SiteFoot />
-
-    <script>
-      const revealTargets = document.querySelectorAll('[data-reveal]')
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-      if (reduceMotion || !('IntersectionObserver' in window)) {
-        revealTargets.forEach((element) => element.classList.add('is-revealed'))
-      } else {
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (!entry.isIntersecting) return
-              entry.target.classList.add('is-revealed')
-              observer.unobserve(entry.target)
-            })
-          },
-          { threshold: 0.12, rootMargin: '0px 0px -7% 0px' }
-        )
-
-        revealTargets.forEach((element) => observer.observe(element))
-      }
-    </script>
   </body>
 </html>

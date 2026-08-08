@@ -4,140 +4,274 @@ import { capabilities, profile } from '../data/portfolio'
 
 <section class="about section" id="about" aria-labelledby="about-title">
   <div class="site-shell">
-    <div class="section-heading" data-reveal>
+    <div class="section-heading about__heading" data-reveal>
       <span class="section-number">01</span>
-      <p class="section-kicker">Profile / Engineering approach</p>
-      <h2 id="about-title">I work where software logic, security boundaries, and real-world constraints collide.</h2>
+      <p class="section-kicker">PROFILE / OPERATING MODEL</p>
+      <h2 id="about-title">I build systems by making invisible rules visible.</h2>
     </div>
 
-    <div class="about__lead" data-reveal>
-      <p class="about__statement">
-        My work spans production software, security architecture, red-team thinking, testing, and applied AI. I care about making hidden rules explicit, giving complex systems one reliable source of truth, and keeping technical decisions understandable under change.
-      </p>
-      <div class="about__meta">
-        <div><span>CURRENT</span><strong>{profile.company}</strong></div>
-        <div><span>ACADEMIC</span><strong>M.Eng. Artificial Intelligence</strong></div>
-        <div><span>BASE</span><strong>{profile.location}</strong></div>
+    <div class="about__manifesto">
+      <div class="about__copy">
+        <p class="about__eyebrow" data-reveal>SOFTWARE IS NOT JUST CODE. IT IS BEHAVIOR UNDER PRESSURE.</p>
+        <p class="about__statement" data-split-reveal>
+          I work where product logic, engineering constraints, security boundaries and operational reality collide.
+        </p>
+        <p class="about__body" data-reveal>
+          The goal is not to add complexity. It is to find the real source of truth, model it explicitly, protect its boundaries, and make the system easier to reason about after the next requirement arrives.
+        </p>
+      </div>
+
+      <div class="about__machine" data-reveal aria-hidden="true">
+        <div class="about__machine-grid"></div>
+        <div class="about__core" data-about-core>
+          <span>PE</span>
+          <i></i><i></i><i></i>
+        </div>
+        <span class="about__orbit-word about__orbit-word--a" data-orbit-word>BUILD</span>
+        <span class="about__orbit-word about__orbit-word--b" data-orbit-word>BREAK</span>
+        <span class="about__orbit-word about__orbit-word--c" data-orbit-word>SECURE</span>
+        <div class="about__machine-caption">
+          <span>INPUT</span><b>CONSTRAINTS</b><i>→</i><b>RULES</b><i>→</i><b>SYSTEM</b><span>OUTPUT</span>
+        </div>
       </div>
     </div>
 
+    <div class="about__meta" data-reveal>
+      <div><span>NOW</span><strong>{profile.company}</strong></div>
+      <div><span>STUDY</span><strong>M.Eng. Artificial Intelligence</strong></div>
+      <div><span>BASE</span><strong>{profile.location}</strong></div>
+      <div><span>MODE</span><strong>Architecture · Security · Delivery</strong></div>
+    </div>
+
     <div class="about__capabilities">
-      {
-        capabilities.map((item) => (
-          <article class="about__capability" data-reveal>
-            <div class="about__capability-head">
-              <span>{item.index}</span>
-              <span aria-hidden="true">↘</span>
-            </div>
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
-          </article>
-        ))
-      }
+      {capabilities.map((item, index) => (
+        <article class="capability" data-reveal data-cursor={item.title}>
+          <div class="capability__top"><span>{item.index}</span><i>{String(index + 1).padStart(2, '0')} / {String(capabilities.length).padStart(2, '0')}</i></div>
+          <h3>{item.title}</h3>
+          <p>{item.description}</p>
+          <div class="capability__arrow" aria-hidden="true">↘</div>
+        </article>
+      ))}
     </div>
   </div>
 </section>
 
 <style lang="scss">
   .about {
-    &__lead {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
-      gap: clamp(2rem, 7vw, 7rem);
-      margin-top: clamp(3rem, 7vw, 6rem);
-      padding-top: 2rem;
-      border-top: 1px solid color(shadow);
+    position: relative;
+    overflow: hidden;
+
+    &:before {
+      position: absolute;
+      top: 12%;
+      right: -14vw;
+      width: 38vw;
+      aspect-ratio: 1;
+      border: 1px solid color(shadow);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 8vw color(shadow, .08), inset 0 0 0 16vw color(shadow, .04);
+      content: '';
+      pointer-events: none;
     }
 
+    &__manifesto {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(330px, .85fr);
+      gap: clamp(3rem, 8vw, 9rem);
+      align-items: center;
+      margin-top: clamp(4rem, 9vw, 8rem);
+    }
+
+    &__copy { position: relative; z-index: 2; }
+    &__eyebrow {
+      margin: 0 0 2rem;
+      color: color(accent);
+      font: 700 .61rem/1.35 font-family(fraktion);
+      letter-spacing: .08em;
+    }
     &__statement {
-      max-width: 58rem;
+      max-width: 64rem;
       margin: 0;
-      font: 200 clamp(2rem, 4.4vw, 4.6rem) / 1.02 font-family(editorial);
-      letter-spacing: -0.045em;
+      font: 200 clamp(2.7rem, 6.7vw, 7.4rem)/.88 font-family(editorial);
+      letter-spacing: -.062em;
+    }
+    &__body {
+      max-width: 45rem;
+      margin: 2.2rem 0 0 auto;
+      padding-left: clamp(0rem, 10vw, 10rem);
+      color: color(muted);
+      font-size: clamp(.98rem, 1.2vw, 1.18rem);
+      line-height: 1.58;
+    }
+
+    &__machine {
+      position: relative;
+      min-height: min(52vw, 42rem);
+      border: 1px solid color(shadow);
+      overflow: hidden;
+      background: color(primary);
+    }
+
+    &__machine-grid {
+      position: absolute;
+      inset: 0;
+      opacity: .5;
+      background-image: linear-gradient(color(shadow) 1px, transparent 1px), linear-gradient(90deg, color(shadow) 1px, transparent 1px);
+      background-size: 12.5% 12.5%;
+      mask-image: radial-gradient(circle at center, #000 0, transparent 72%);
+    }
+
+    &__core {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      display: grid;
+      place-items: center;
+      width: 34%;
+      aspect-ratio: 1;
+      border: 1px solid color(accent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      will-change: transform;
+
+      &:before,
+      &:after {
+        position: absolute;
+        inset: -30%;
+        border: 1px dashed color(shadow);
+        border-radius: 50%;
+        content: '';
+      }
+      &:after { inset: -62%; border-style: solid; opacity: .65; }
+      span { color: color(accent); font: 700 clamp(1rem, 2vw, 2rem)/1 font-family(fraktion); }
+      i {
+        position: absolute;
+        width: .45rem;
+        height: .45rem;
+        border-radius: 50%;
+        background: color(accent);
+        &:nth-of-type(1) { top: -32%; left: 50%; }
+        &:nth-of-type(2) { right: -64%; top: 50%; }
+        &:nth-of-type(3) { bottom: -64%; left: 16%; }
+      }
+    }
+
+    &__orbit-word {
+      position: absolute;
+      z-index: 2;
+      color: color(secondary);
+      font: 700 clamp(1.6rem, 3.8vw, 4rem)/1 font-family(bigger);
+      letter-spacing: -.055em;
+      &--a { top: 12%; left: 7%; }
+      &--b { top: 44%; right: 5%; color: transparent; -webkit-text-stroke: 1px color(secondary); }
+      &--c { bottom: 16%; left: 9%; color: color(accent); }
+    }
+
+    &__machine-caption {
+      position: absolute;
+      right: 1rem;
+      bottom: 1rem;
+      left: 1rem;
+      display: flex;
+      gap: .55rem;
+      align-items: center;
+      padding-top: .8rem;
+      border-top: 1px solid color(shadow);
+      font: 400 .5rem/1 font-family(fraktion);
+      letter-spacing: .05em;
+      span { color: color(muted); }
+      b { color: color(secondary); font-weight: 400; }
+      i { color: color(accent); }
     }
 
     &__meta {
-      align-self: end;
       display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: clamp(4rem, 8vw, 8rem);
       border-top: 1px solid color(shadow);
-
-      div {
-        display: grid;
-        gap: 0.35rem;
-        padding: 1rem 0;
-        border-bottom: 1px solid color(shadow);
-      }
-
-      span {
-        color: color(accent);
-        font: 400 0.63rem / 1 font-family(fraktion);
-        letter-spacing: 0.07em;
-      }
-
-      strong {
-        color: color(secondary);
-        font: 400 0.9rem / 1.35 font-family(fraktion);
-      }
+      border-left: 1px solid color(shadow);
+      div { display: grid; gap: 1rem; min-height: 8rem; padding: 1.2rem; border-right: 1px solid color(shadow); border-bottom: 1px solid color(shadow); }
+      span { color: color(accent); font: 700 .58rem/1 font-family(fraktion); letter-spacing: .08em; }
+      strong { align-self: end; font: 400 .78rem/1.35 font-family(fraktion); }
     }
 
     &__capabilities {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin-top: clamp(4rem, 8vw, 8rem);
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: clamp(5rem, 9vw, 9rem);
       border-top: 1px solid color(shadow);
       border-left: 1px solid color(shadow);
     }
+  }
 
-    &__capability {
-      min-height: 19rem;
-      padding: clamp(1.2rem, 2.2vw, 2rem);
-      border-right: 1px solid color(shadow);
-      border-bottom: 1px solid color(shadow);
-      transition: background 220ms ease, transform 220ms ease;
+  .capability {
+    position: relative;
+    min-height: clamp(22rem, 31vw, 31rem);
+    padding: clamp(1.3rem, 2.4vw, 2.3rem);
+    border-right: 1px solid color(shadow);
+    border-bottom: 1px solid color(shadow);
+    overflow: hidden;
+    transition: color .35s ease, background .35s ease;
 
-      &:hover {
-        background: color(shadow);
-        transform: translateY(-0.35rem);
-      }
-
-      h3 {
-        max-width: 13rem;
-        margin: clamp(3rem, 7vw, 5.5rem) 0 0;
-        font: 200 clamp(1.8rem, 2.5vw, 2.65rem) / 0.98 font-family(editorial);
-        letter-spacing: -0.04em;
-      }
-
-      p {
-        max-width: 25rem;
-        margin: 1rem 0 0;
-        color: color(muted);
-        font-size: 0.92rem;
-        line-height: 1.52;
-      }
+    &:before {
+      position: absolute;
+      inset: auto -30% -70% auto;
+      width: 120%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: color(accent);
+      transform: scale(.05);
+      transform-origin: center;
+      transition: transform .65s cubic-bezier(.22,1,.36,1);
+      content: '';
     }
+    &:hover { color: color(white); }
+    &:hover:before { transform: scale(1.8); }
+    &:hover p, &:hover .capability__top { color: color(white, .72); }
 
-    &__capability-head {
+    &__top, h3, p, &__arrow { position: relative; z-index: 2; }
+    &__top {
       display: flex;
       justify-content: space-between;
-      color: color(accent);
-      font: 400 0.64rem / 1 font-family(fraktion);
-      letter-spacing: 0.06em;
+      color: color(muted);
+      font: 700 .58rem/1 font-family(fraktion);
+      letter-spacing: .07em;
+      span { color: color(accent); }
     }
-
-    @media (max-width: 900px) {
-      &__lead {
-        grid-template-columns: 1fr;
-      }
-
-      &__capabilities {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    h3 {
+      max-width: 15rem;
+      margin: clamp(5rem, 10vw, 9rem) 0 0;
+      font: 200 clamp(2rem, 3.1vw, 3.5rem)/.93 font-family(editorial);
+      letter-spacing: -.052em;
     }
-
-    @media (max-width: 600px) {
-      &__capabilities { grid-template-columns: 1fr; }
-      &__capability { min-height: auto; }
-      &__capability h3 { margin-top: 3.5rem; }
+    p {
+      max-width: 27rem;
+      margin: 1.25rem 0 0;
+      color: color(muted);
+      font-size: .9rem;
+      line-height: 1.55;
+      transition: color .35s ease;
     }
+    &__arrow {
+      position: absolute;
+      right: 1.4rem;
+      bottom: 1.3rem;
+      font-size: 1.3rem;
+    }
+  }
+
+  @media (max-width: 1000px) {
+    .about__manifesto { grid-template-columns: 1fr; }
+    .about__machine { min-height: 34rem; }
+    .about__meta { grid-template-columns: 1fr 1fr; }
+    .about__capabilities { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 620px) {
+    .about__statement { font-size: clamp(2.6rem, 13vw, 4.8rem); }
+    .about__body { padding-left: 0; }
+    .about__machine { min-height: 27rem; }
+    .about__machine-caption { flex-wrap: wrap; }
+    .about__meta, .about__capabilities { grid-template-columns: 1fr; }
+    .capability { min-height: 20rem; }
   }
 </style>

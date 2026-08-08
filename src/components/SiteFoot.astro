@@ -5,90 +5,46 @@ const year = new Date().getFullYear()
 
 <footer class="site-foot">
   <div class="site-shell site-foot__inner">
-    <div class="site-foot__brand">
-      <span class="site-foot__mark">PE</span>
-      <div><strong>{profile.name}</strong><span>Software / Security / AI</span></div>
-    </div>
-
+    <a class="site-foot__brand" href="#top" data-nav-link data-cursor="Top">
+      <span>PE</span>
+      <div><strong>{profile.name}</strong><i>Software / Security / AI</i></div>
+    </a>
     <div class="site-foot__meta">
       <span>© {year} {profile.name}</span>
-      <span>Built with Astro</span>
-      <span>Base design adapted from AW 2025 Portfolio by Antoine Wodniack · CC BY-NC 4.0</span>
+      <span>ASTRO + GSAP + LENIS</span>
+      <span>Base design adapted from AW 2025 Portfolio · CC BY-NC 4.0</span>
     </div>
-
-    <a class="site-foot__top" href="#top">Back to top ↑</a>
+    <a class="site-foot__top" href="#top" data-nav-link data-magnetic>BACK TO TOP <i>↑</i></a>
   </div>
 </footer>
+
+<script>
+  document.querySelectorAll('.site-foot [data-nav-link]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault()
+      const lenis = (window as any).__portfolioLenis
+      if (lenis) lenis.scrollTo(0)
+      else window.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+  })
+</script>
 
 <style lang="scss">
   .site-foot {
     border-top: 1px solid color(shadow);
     background: color(primary);
-
     &__inner {
       display: grid;
       grid-template-columns: auto 1fr auto;
       gap: 2rem;
       align-items: center;
-      min-height: 8rem;
-      padding-top: 1.4rem;
-      padding-bottom: 1.4rem;
+      min-height: 9rem;
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
     }
-
-    &__brand {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-
-      > div {
-        display: grid;
-        gap: 0.15rem;
-        font-family: font-family(fraktion);
-      }
-
-      strong {
-        font-size: 0.72rem;
-        text-transform: uppercase;
-      }
-
-      div span {
-        color: color(muted);
-        font-size: 0.6rem;
-        text-transform: uppercase;
-      }
-    }
-
-    &__mark {
-      display: grid;
-      place-items: center;
-      width: 2.4rem;
-      height: 2.4rem;
-      border: 1px solid color(shadow);
-      border-radius: 50%;
-      color: color(accent);
-      font: 700 0.68rem / 1 font-family(fraktion);
-    }
-
-    &__meta {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.65rem 1.25rem;
-      color: color(muted);
-      font: 400 0.58rem / 1.35 font-family(fraktion);
-      text-align: center;
-    }
-
-    &__top {
-      color: color(secondary);
-      font: 700 0.62rem / 1 font-family(fraktion);
-      text-decoration: none;
-      text-transform: uppercase;
-    }
-
-    @media (max-width: 800px) {
-      &__inner { grid-template-columns: 1fr; }
-      &__meta { justify-content: flex-start; text-align: left; }
-    }
+    &__brand { display: flex; align-items: center; gap: .8rem; color: color(secondary); text-decoration: none; > span { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border: 1px solid color(shadow); border-radius: 50%; color: color(accent); font: 700 .68rem/1 font-family(fraktion); } div { display: grid; gap: .15rem; font-family: font-family(fraktion); } strong { font-size: .67rem; letter-spacing: .04em; text-transform: uppercase; } i { color: color(muted); font-size: .53rem; letter-spacing: .06em; text-transform: uppercase; } }
+    &__meta { display: flex; flex-wrap: wrap; justify-content: center; gap: .65rem 1.2rem; color: color(muted); font: 400 .54rem/1.35 font-family(fraktion); letter-spacing: .04em; text-align: center; }
+    &__top { display: flex; gap: 1rem; align-items: center; color: color(secondary); font: 700 .58rem/1 font-family(fraktion); letter-spacing: .06em; text-decoration: none; i { color: color(accent); } }
   }
+  @media (max-width: 840px) { .site-foot__inner { grid-template-columns: 1fr; } .site-foot__meta { justify-content: flex-start; text-align: left; } .site-foot__top { justify-self: start; } }
 </style>
