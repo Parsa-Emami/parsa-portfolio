@@ -170,8 +170,8 @@ const menu = [
       font: 700 .72rem/1 font-family(fraktion);
       letter-spacing: -.07em;
     }
-    &__name { display: grid; gap: .14rem; font-family: font-family(fraktion); strong { font-size: .68rem; letter-spacing: .04em; } i { color: color(muted); font-size: .52rem; letter-spacing: .08em; } }
-    &__nav { display: flex; justify-content: center; gap: clamp(1rem, 2vw, 2.2rem); a { display: flex; gap: .42rem; color: color(muted); font: 700 .58rem/1 font-family(fraktion); letter-spacing: .05em; text-decoration: none; text-transform: uppercase; transition: color .2s ease; i { color: color(accent); font-size: .48rem; } &:hover { color: color(secondary); } } }
+    &__name { display: grid; gap: .14rem; font-family: font-family(fraktion); strong { font-size: .68rem; letter-spacing: 0.056em; } i { color: color(muted); font-size: .52rem; letter-spacing: 0.112em; } }
+    &__nav { display: flex; justify-content: center; gap: clamp(1rem, 2vw, 2.2rem); a { display: flex; gap: .42rem; color: color(muted); font: 700 .58rem/1 font-family(fraktion); letter-spacing: 0.07em; text-decoration: none; text-transform: uppercase; transition: color .2s ease; i { color: color(accent); font-size: .48rem; } &:hover { color: color(secondary); } } }
     &__actions { display: flex; gap: .45rem; align-items: center; }
     &__theme, &__menu-button { border: 1px solid color(shadow); background: color(primary, .55); color: color(secondary); cursor: pointer; backdrop-filter: blur(10px); }
     &__theme {
@@ -192,7 +192,7 @@ const menu = [
       min-height: 2.4rem;
       padding: 0 .85rem;
       font: 700 .56rem/1 font-family(fraktion);
-      letter-spacing: .07em;
+      letter-spacing: 0.098em;
       span { margin-right: .1rem; }
       i { width: .75rem; height: 1px; background: currentColor; transition: transform .3s ease; }
     }
@@ -223,7 +223,7 @@ const menu = [
     }
     &.is-open &__backdrop { opacity: 1; }
     &.is-open &__panel { transform: translateX(0); }
-    &__top { display: flex; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid color(primary, .2); font: 700 .57rem/1 font-family(fraktion); letter-spacing: .08em; button { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; } }
+    &__top { display: flex; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid color(primary, .2); font: 700 .57rem/1 font-family(fraktion); letter-spacing: 0.112em; button { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; } }
     nav { align-self: center; display: grid; }
     nav a {
       display: grid;

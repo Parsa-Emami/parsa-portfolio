@@ -14,6 +14,9 @@ $theme-font-families: (
 /* Sizes */
 $theme-font-styles: (
   default: (
-    base: (16px, 400, 1.48, editorial, -0.025em),
+    // A gentler default tracking than the original -0.025em: still tight
+    // enough to match the editorial voice, but easier on the eyes as the
+    // inherited baseline for any text that isn't given its own display style.
+    base: (16px, 400, 1.5, editorial, -0.01em),
   ),
 );

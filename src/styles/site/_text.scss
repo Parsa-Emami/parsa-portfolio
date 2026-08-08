@@ -3,6 +3,11 @@
  */
 
 p {
+  // A touch of positive tracking on running copy (as opposed to the tight,
+  // intentionally squeezed display headings) meaningfully improves reading
+  // comfort at small sizes without changing the site's visual identity.
+  letter-spacing: .006em;
+
   &:first-child {
     margin-top: 0;
   }
