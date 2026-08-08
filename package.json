@@ -1,7 +1,9 @@
 {
-  "name": "public.wodniack.dev",
+  "name": "parsa-emami-portfolio",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "description": "Portfolio of Parsa Emami — Software Engineer, Security Architect, Red Team, and AI engineering practitioner.",
+  "private": true,
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",

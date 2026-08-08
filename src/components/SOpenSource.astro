@@ -1,0 +1,203 @@
+---
+import { openSourceProjects, profile } from '../data/portfolio'
+---
+
+<section class="oss section" id="open-source" aria-labelledby="oss-title">
+  <div class="site-shell">
+    <div class="section-heading" data-reveal>
+      <span class="section-number">03</span>
+      <p class="section-kicker">Public code / GitHub</p>
+      <h2 id="oss-title">Open source projects that show how I structure, ship, and iterate.</h2>
+    </div>
+
+    <div class="oss__header" data-reveal>
+      <p>Public repositories are intentionally separated from enterprise work. Every project below links to code you can inspect directly.</p>
+      <a href={profile.github} target="_blank" rel="noopener noreferrer">github.com/Parsa-Emami <span aria-hidden="true">↗</span></a>
+    </div>
+
+    <div class="oss__projects">
+      {
+        openSourceProjects.map((project) => (
+          <article class="oss-card" data-reveal>
+            <a class="oss-card__link" href={project.href} target="_blank" rel="noopener noreferrer" aria-label={`Open ${project.name} on GitHub`}>
+              <span>{project.number}</span>
+              <span>VIEW SOURCE ↗</span>
+            </a>
+            <div class="oss-card__title-row">
+              <div>
+                <p>{project.subtitle}</p>
+                <h3>{project.name}</h3>
+              </div>
+              <span class="oss-card__github">GH</span>
+            </div>
+            <p class="oss-card__description">{project.description}</p>
+            <ul>
+              {project.highlights.map((highlight) => <li>{highlight}</li>)}
+            </ul>
+            <div class="oss-card__stack">
+              {project.stack.map((item) => <span>{item}</span>)}
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style lang="scss">
+  .oss {
+    &__header {
+      display: flex;
+      justify-content: space-between;
+      gap: 2rem;
+      align-items: flex-end;
+      margin-top: clamp(3rem, 6vw, 5rem);
+      padding-top: 1.25rem;
+      border-top: 1px solid color(shadow);
+
+      p {
+        max-width: 42rem;
+        margin: 0;
+        color: color(muted);
+      }
+
+      a {
+        color: color(secondary);
+        font: 700 0.72rem / 1.2 font-family(fraktion);
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+    }
+
+    &__projects {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1rem;
+      margin-top: clamp(4rem, 8vw, 8rem);
+    }
+  }
+
+  .oss-card {
+    position: relative;
+    grid-column: span 4;
+    min-height: 39rem;
+    padding: clamp(1.2rem, 2vw, 1.8rem);
+    border: 1px solid color(shadow);
+    background: color(primary);
+    transition: transform 220ms ease, box-shadow 220ms ease;
+
+    &:nth-child(2) { transform: translateY(3rem); }
+
+    &:hover {
+      transform: translateY(-0.4rem);
+      box-shadow: 0.8rem 0.8rem 0 color(shadow);
+    }
+
+    &:nth-child(2):hover { transform: translateY(2.6rem); }
+
+    &__link {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 1px solid color(shadow);
+      color: color(accent);
+      font: 700 0.62rem / 1 font-family(fraktion);
+      letter-spacing: 0.06em;
+      text-decoration: none;
+    }
+
+    &__title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-top: 4rem;
+
+      p {
+        margin: 0 0 0.7rem;
+        color: color(muted);
+        font: 400 0.68rem / 1.2 font-family(fraktion);
+        text-transform: uppercase;
+      }
+
+      h3 {
+        margin: 0;
+        font: 700 clamp(2.6rem, 4.8vw, 5rem) / 0.8 font-family(bigger);
+        letter-spacing: -0.055em;
+        text-transform: uppercase;
+      }
+    }
+
+    &__github {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 2.4rem;
+      height: 2.4rem;
+      border: 1px solid color(shadow);
+      border-radius: 50%;
+      color: color(accent);
+      font: 700 0.62rem / 1 font-family(fraktion);
+    }
+
+    &__description {
+      margin: 1.6rem 0 0;
+      color: color(muted);
+      line-height: 1.52;
+    }
+
+    ul {
+      display: grid;
+      gap: 0.7rem;
+      margin: 1.6rem 0 0;
+      padding: 1.4rem 0 0;
+      border-top: 1px dashed color(shadow);
+      list-style: none;
+    }
+
+    li {
+      position: relative;
+      padding-left: 1.15rem;
+      font-size: 0.82rem;
+      line-height: 1.45;
+
+      &:before {
+        position: absolute;
+        top: 0.58em;
+        left: 0;
+        width: 0.34rem;
+        height: 0.34rem;
+        background: color(accent);
+        content: '';
+      }
+    }
+
+    &__stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 2rem;
+
+      span {
+        padding: 0.42rem 0.55rem;
+        border: 1px solid color(shadow);
+        font: 400 0.58rem / 1 font-family(fraktion);
+        text-transform: uppercase;
+      }
+    }
+  }
+
+  @media (max-width: 980px) {
+    .oss-card {
+      grid-column: span 6;
+      &:nth-child(2) { transform: none; }
+      &:nth-child(2):hover { transform: translateY(-0.4rem); }
+    }
+  }
+
+  @media (max-width: 650px) {
+    .oss__header { flex-direction: column; align-items: flex-start; }
+    .oss-card { grid-column: 1 / -1; min-height: auto; }
+  }
+</style>

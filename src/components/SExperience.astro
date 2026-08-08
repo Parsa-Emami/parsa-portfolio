@@ -1,0 +1,193 @@
+---
+import { education, experience, researchThemes } from '../data/portfolio'
+---
+
+<section class="experience section" id="experience" aria-labelledby="experience-title">
+  <div class="site-shell">
+    <div class="section-heading" data-reveal>
+      <span class="section-number">04</span>
+      <p class="section-kicker">Experience / Education</p>
+      <h2 id="experience-title">Engineering practice reinforced by security work, teaching, and AI study.</h2>
+    </div>
+
+    <div class="experience__layout">
+      <div class="experience__timeline">
+        {
+          experience.map((item, index) => (
+            <article class="timeline-item" data-reveal>
+              <div class="timeline-item__number">{String(index + 1).padStart(2, '0')}</div>
+              <div class="timeline-item__period">{item.period}</div>
+              <div class="timeline-item__content">
+                <h3>{item.role}</h3>
+                <p class="timeline-item__org">{item.organization} · {item.mode}</p>
+                <p class="timeline-item__description">{item.description}</p>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      <aside class="experience__side">
+        <section class="experience__panel" data-reveal>
+          <p class="experience__panel-label">EDUCATION</p>
+          {education.map((item) => (
+            <div class="education-item">
+              <span>{item.period}</span>
+              <h3>{item.degree}</h3>
+              <p>{item.school}</p>
+            </div>
+          ))}
+        </section>
+
+        <section class="experience__panel experience__panel--accent" data-reveal>
+          <p class="experience__panel-label">SECURITY / RESEARCH THEMES</p>
+          <div class="research-list">
+            {researchThemes.map((theme, index) => (
+              <div><span>{String(index + 1).padStart(2, '0')}</span><p>{theme}</p></div>
+            ))}
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<style lang="scss">
+  .experience {
+    background: color(primary);
+
+    &__layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.55fr);
+      gap: clamp(2rem, 6vw, 6rem);
+      margin-top: clamp(4rem, 8vw, 8rem);
+    }
+
+    &__timeline { border-top: 1px solid color(shadow); }
+
+    &__side {
+      display: grid;
+      align-content: start;
+      gap: 1rem;
+      position: sticky;
+      top: 7rem;
+      height: fit-content;
+    }
+
+    &__panel {
+      padding: 1.4rem;
+      border: 1px solid color(shadow);
+
+      &--accent {
+        background: color(secondary);
+        color: color(primary);
+
+        .experience__panel-label { color: color(accent); }
+      }
+    }
+
+    &__panel-label {
+      margin: 0 0 2rem;
+      color: color(accent);
+      font: 700 0.62rem / 1 font-family(fraktion);
+      letter-spacing: 0.07em;
+    }
+  }
+
+  .timeline-item {
+    display: grid;
+    grid-template-columns: 3rem minmax(8.5rem, 0.35fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    padding: 2rem 0;
+    border-bottom: 1px solid color(shadow);
+
+    &__number,
+    &__period {
+      color: color(muted);
+      font: 400 0.65rem / 1.35 font-family(fraktion);
+      letter-spacing: 0.04em;
+    }
+
+    &__number { color: color(accent); }
+
+    h3 {
+      margin: 0;
+      font: 200 clamp(1.8rem, 3vw, 3rem) / 1 font-family(editorial);
+      letter-spacing: -0.04em;
+    }
+
+    &__org {
+      margin: 0.65rem 0 0;
+      color: color(secondary);
+      font: 400 0.72rem / 1.35 font-family(fraktion);
+    }
+
+    &__description {
+      max-width: 42rem;
+      margin: 1rem 0 0;
+      color: color(muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+  }
+
+  .education-item {
+    padding: 1.3rem 0;
+    border-top: 1px solid color(shadow);
+
+    &:last-child { padding-bottom: 0; }
+
+    span {
+      color: color(muted);
+      font: 400 0.62rem / 1 font-family(fraktion);
+    }
+
+    h3 {
+      margin: 1rem 0 0;
+      font: 200 1.55rem / 1.02 font-family(editorial);
+      letter-spacing: -0.035em;
+    }
+
+    p {
+      margin: 0.65rem 0 0;
+      color: color(muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+  }
+
+  .research-list {
+    display: grid;
+
+    div {
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 0.75rem;
+      padding: 0.85rem 0;
+      border-top: 1px solid color(primary);
+    }
+
+    span {
+      color: color(accent);
+      font: 400 0.58rem / 1.3 font-family(fraktion);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      text-transform: capitalize;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .experience__layout { grid-template-columns: 1fr; }
+    .experience__side { position: static; grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 650px) {
+    .timeline-item { grid-template-columns: 2rem 1fr; }
+    .timeline-item__content { grid-column: 2; }
+    .experience__side { grid-template-columns: 1fr; }
+  }
+</style>

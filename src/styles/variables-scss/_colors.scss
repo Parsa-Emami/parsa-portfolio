@@ -1,20 +1,24 @@
 /**
- * Colors variables
+ * Portfolio color system
  */
 @use 'sass:map';
 
 $theme-colors: (
   default: (
-    primary: #f40c3f,
-    secondary: #160000,
-    shadow: #540000,
-    white: #fff0eb,
+    primary: #0b0b0d,
+    secondary: #f1eee8,
+    shadow: #2a292e,
+    white: #fffdf8,
+    accent: #ff3158,
+    muted: #9d9892,
   ),
 
   contrasted: (
-    primary: #fff2ed,
-    secondary: #160000,
-    shadow: #4d4040,
-    white: #fff0eb,
+    primary: #f1eee8,
+    secondary: #141215,
+    shadow: #d6cfc7,
+    white: #fffdf8,
+    accent: #d4163b,
+    muted: #716b66,
   ),
 );

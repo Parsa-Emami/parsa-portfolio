@@ -13,9 +13,46 @@
 /* Utility classes */
 @use 'utilities/visibility';
 
-/* Import */
+/* Normalize */
 @import '../../node_modules/modern-normalize/modern-normalize.css';
 
-@import '/fonts/bigger-display.css';
-@import '/fonts/editorial-new.css';
-@import '/fonts/fraktion-mono.css';
+/* Local typefaces retained from the original open-source portfolio package. */
+@font-face {
+  font-family: 'Editorial New';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/parsa-portfolio/fonts/PPEditorialNew-Regular.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Editorial New';
+  font-style: normal;
+  font-weight: 200;
+  src: url('/parsa-portfolio/fonts/PPEditorialNew-Ultralight.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fraktion Mono';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/parsa-portfolio/fonts/PPFraktionMono-Regular.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fraktion Mono';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/parsa-portfolio/fonts/PPFraktionMono-Bold.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bigger Display';
+  font-style: normal;
+  font-weight: 700;
+  src: url('/parsa-portfolio/fonts/Bigger-Display.woff2') format('woff2');
+  font-display: swap;
+}

@@ -1,53 +1,94 @@
-<footer class="site-foot">
-  <div class="site-foot__logo">
-    <a href="/">
-      <svg
-        width="280"
-        height="280"
-        viewBox="0 0 280 280"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M240.245 0v263.2h-19.894V0h-39.756v263.2h-19.861V0h-39.755v280H280V0h-39.755Z"
-          fill="#160000"
-        >
-        </path>
-        <path d="M0 0v280h39.755V16.8H59.65V280h39.756V0H0Z" fill="#160000">
-        </path>
-      </svg>
+---
+import { profile } from '../data/portfolio'
+const year = new Date().getFullYear()
+---
 
-      <span class="u-sr-only">Antoine Wodniack</span>
-    </a>
-  </div><!-- .site-foot__logo -->
+<footer class="site-foot">
+  <div class="site-shell site-foot__inner">
+    <div class="site-foot__brand">
+      <span class="site-foot__mark">PE</span>
+      <div><strong>{profile.name}</strong><span>Software / Security / AI</span></div>
+    </div>
+
+    <div class="site-foot__meta">
+      <span>© {year} {profile.name}</span>
+      <span>Built with Astro</span>
+      <span>Base design adapted from AW 2025 Portfolio by Antoine Wodniack · CC BY-NC 4.0</span>
+    </div>
+
+    <a class="site-foot__top" href="#top">Back to top ↑</a>
+  </div>
 </footer>
 
 <style lang="scss">
   .site-foot {
-    @include flex(row, center, center);
+    border-top: 1px solid color(shadow);
+    background: color(primary);
 
-    position: relative;
-    z-index: 3;
-
-    padding: 1.5rem;
-
-    border-top: 1px solid color(secondary);
-
-    @include mq(phone) {
-      padding: 1rem;
+    &__inner {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 2rem;
+      align-items: center;
+      min-height: 8rem;
+      padding-top: 1.4rem;
+      padding-bottom: 1.4rem;
     }
 
-    &__logo {
-      svg {
-        display: block;
-        width: 3rem;
-        height: 3rem;
+    &__brand {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
 
-        @include mq(phone) {
-          width: 1.875rem;
-          height: 1.875rem;
-        }
+      > div {
+        display: grid;
+        gap: 0.15rem;
+        font-family: font-family(fraktion);
       }
+
+      strong {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+      }
+
+      div span {
+        color: color(muted);
+        font-size: 0.6rem;
+        text-transform: uppercase;
+      }
+    }
+
+    &__mark {
+      display: grid;
+      place-items: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      border: 1px solid color(shadow);
+      border-radius: 50%;
+      color: color(accent);
+      font: 700 0.68rem / 1 font-family(fraktion);
+    }
+
+    &__meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.65rem 1.25rem;
+      color: color(muted);
+      font: 400 0.58rem / 1.35 font-family(fraktion);
+      text-align: center;
+    }
+
+    &__top {
+      color: color(secondary);
+      font: 700 0.62rem / 1 font-family(fraktion);
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 800px) {
+      &__inner { grid-template-columns: 1fr; }
+      &__meta { justify-content: flex-start; text-align: left; }
     }
   }
 </style>
