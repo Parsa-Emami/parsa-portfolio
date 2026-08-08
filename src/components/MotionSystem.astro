@@ -1,3 +1,8 @@
+<div class="ambient-field" data-ambient-field aria-hidden="true">
+  <span class="ambient-field__blob ambient-field__blob--a"></span>
+  <span class="ambient-field__blob ambient-field__blob--b"></span>
+</div>
+
 <div class="motion-loader" data-motion-loader aria-hidden="true">
   <div class="motion-loader__top">
     <span>PE / PORTFOLIO SYSTEM</span>
@@ -28,6 +33,10 @@
   import { SplitText } from 'gsap/SplitText'
 
   gsap.registerPlugin(ScrollTrigger, SplitText)
+
+  // Prevents ScrollTrigger from recalculating (and stuttering) every time a
+  // mobile browser's address bar shows/hides and resizes the viewport.
+  ScrollTrigger.config({ ignoreMobileResize: true })
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const coarsePointer = window.matchMedia('(pointer: coarse)').matches
@@ -424,6 +433,73 @@
     })
   }
 
+  const initAmbientField = () => {
+    if (reduceMotion) return
+    const field = document.querySelector('[data-ambient-field]')
+    const blobA = field?.querySelector('.ambient-field__blob--a')
+    const blobB = field?.querySelector('.ambient-field__blob--b')
+    if (!field || !blobA || !blobB) return
+
+    // A slow scroll-tied parallax gives the whole page a sense of depth and
+    // gently rewards continued scrolling — runs on every device since it's
+    // just two cheap transforms.
+    gsap.to(blobA, {
+      yPercent: 22,
+      xPercent: -6,
+      ease: 'none',
+      scrollTrigger: { trigger: document.body, start: 'top top', end: 'bottom bottom', scrub: 1.4 },
+    })
+    gsap.to(blobB, {
+      yPercent: -18,
+      xPercent: 8,
+      ease: 'none',
+      scrollTrigger: { trigger: document.body, start: 'top top', end: 'bottom bottom', scrub: 1.4 },
+    })
+
+    // On top of that, desktop pointers nudge the blobs toward the cursor for
+    // a subtle, expensive-feeling parallax that costs almost nothing.
+    if (!coarsePointer && desktop.matches) {
+      const moveA = gsap.quickTo(blobA, 'x', { duration: 1.4, ease: 'power3.out' })
+      const moveAY = gsap.quickTo(blobA, 'y', { duration: 1.4, ease: 'power3.out' })
+      const moveB = gsap.quickTo(blobB, 'x', { duration: 1.8, ease: 'power3.out' })
+      const moveBY = gsap.quickTo(blobB, 'y', { duration: 1.8, ease: 'power3.out' })
+      window.addEventListener('pointermove', (event) => {
+        const nx = (event.clientX / window.innerWidth - 0.5) * 2
+        const ny = (event.clientY / window.innerHeight - 0.5) * 2
+        moveA(nx * 34)
+        moveAY(ny * 34)
+        moveB(nx * -26)
+        moveBY(ny * -26)
+      }, { passive: true })
+    }
+  }
+
+  // Sections like `.systems` and `.oss` pin/scrub on desktop but fall back to
+  // a plain stacked layout on phones and small tablets, where pinning tends
+  // to fight the browser's own momentum scroll. Give that stacked layout its
+  // own light, non-pinned reveal so the mobile experience still feels
+  // motion-directed instead of static.
+  const initMobileCardReveals = () => {
+    if (reduceMotion || desktop.matches) return
+    const cards = document.querySelectorAll(
+      '.system-card, .oss-card, .oss__lead-card, .oss__end-card'
+    )
+    cards.forEach((card, index) => {
+      gsap.fromTo(card,
+        { y: 46, opacity: 0, scale: 0.985 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.9,
+          delay: (index % 2) * 0.05,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: card, start: 'top 92%', once: true },
+        }
+      )
+    })
+  }
+
   const initMagnetic = () => {
     if (coarsePointer || reduceMotion) return
     document.querySelectorAll('[data-magnetic]').forEach((element) => {
@@ -458,12 +534,14 @@
     initHeroField()
     initCursor()
     initProgress()
+    initAmbientField()
     await runLoader()
     initHeroMotion()
     initGlobalReveals()
     initAboutMotion()
     initSystemsMotion()
     initOpenSourceMotion()
+    initMobileCardReveals()
     initExperienceMotion()
     initCTAMotion()
     initMagnetic()
@@ -479,6 +557,55 @@
 
 <style lang="scss" is:global>
   body:not(.is-ready) { overflow: hidden; }
+
+  .ambient-field {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    mix-blend-mode: screen;
+
+    &__blob {
+      position: absolute;
+      width: min(60vw, 46rem);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      filter: blur(min(9vw, 7rem));
+      opacity: .28;
+      will-change: transform;
+    }
+    &__blob--a {
+      top: -14%;
+      left: -8%;
+      background: radial-gradient(circle, color(accent) 0%, transparent 68%);
+      animation: ambient-drift-a 26s ease-in-out infinite;
+    }
+    &__blob--b {
+      right: -12%;
+      bottom: -16%;
+      background: radial-gradient(circle, color(secondary) 0%, transparent 70%);
+      opacity: .16;
+      animation: ambient-drift-b 32s ease-in-out infinite;
+    }
+  }
+
+  @keyframes ambient-drift-a {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(6vw, 8vh, 0) scale(1.12); }
+  }
+  @keyframes ambient-drift-b {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-5vw, -6vh, 0) scale(1.08); }
+  }
+
+  @media (max-width: 600px) {
+    .ambient-field__blob { width: 80vw; filter: blur(min(14vw, 6rem)); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-field__blob { animation: none; }
+  }
 
   .motion-loader {
     position: fixed;

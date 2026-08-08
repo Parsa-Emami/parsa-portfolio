@@ -52,15 +52,58 @@ const menu = [
   const menuToggle = document.querySelector('[data-menu-toggle]')
   const menu = document.querySelector('[data-site-menu]')
   const storedTheme = localStorage.getItem('parsa-portfolio-theme')
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   let lastScroll = window.scrollY
 
   if (storedTheme === 'light') root.classList.add('theme-contrasted')
   if (storedTheme === 'dark') root.classList.remove('theme-contrasted')
 
-  toggle?.addEventListener('click', () => {
+  const applyTheme = () => {
     root.classList.toggle('theme-contrasted')
     localStorage.setItem('parsa-portfolio-theme', root.classList.contains('theme-contrasted') ? 'light' : 'dark')
     window.dispatchEvent(new CustomEvent('portfolio-theme-change'))
+  }
+
+  // Circular "wipe" reveal so switching between dark and light feels like an
+  // event rather than an instant color swap. The outgoing theme's color is
+  // held in a fixed overlay that irises open from the button, revealing the
+  // new theme already applied underneath.
+  const themeWipe = (originX: number, originY: number) => {
+    const oldColor = getComputedStyle(root).getPropertyValue('--color-primary').trim() || '#0b0b0d'
+    const maxRadius = Math.hypot(
+      Math.max(originX, window.innerWidth - originX),
+      Math.max(originY, window.innerHeight - originY)
+    ) * 1.05
+
+    const overlay = document.createElement('div')
+    overlay.className = 'theme-wipe'
+    overlay.style.background = oldColor
+    overlay.style.clipPath = `circle(${maxRadius}px at ${originX}px ${originY}px)`
+    document.body.appendChild(overlay)
+
+    applyTheme()
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlay.style.clipPath = `circle(0px at ${originX}px ${originY}px)`
+      })
+    })
+
+    const cleanup = () => overlay.remove()
+    overlay.addEventListener('transitionend', cleanup, { once: true })
+    setTimeout(cleanup, 1100)
+  }
+
+  toggle?.addEventListener('click', (event) => {
+    if (reduceMotion || !(toggle instanceof HTMLElement)) {
+      applyTheme()
+      return
+    }
+    const rect = toggle.getBoundingClientRect()
+    const hasPointerCoords = event instanceof MouseEvent && (event.clientX || event.clientY)
+    const originX = hasPointerCoords ? (event as MouseEvent).clientX : rect.left + rect.width / 2
+    const originY = hasPointerCoords ? (event as MouseEvent).clientY : rect.top + rect.height / 2
+    themeWipe(originX, originY)
   })
 
   const setMenu = (open: boolean) => {
@@ -131,7 +174,16 @@ const menu = [
     &__nav { display: flex; justify-content: center; gap: clamp(1rem, 2vw, 2.2rem); a { display: flex; gap: .42rem; color: color(muted); font: 700 .58rem/1 font-family(fraktion); letter-spacing: .05em; text-decoration: none; text-transform: uppercase; transition: color .2s ease; i { color: color(accent); font-size: .48rem; } &:hover { color: color(secondary); } } }
     &__actions { display: flex; gap: .45rem; align-items: center; }
     &__theme, &__menu-button { border: 1px solid color(shadow); background: color(primary, .55); color: color(secondary); cursor: pointer; backdrop-filter: blur(10px); }
-    &__theme { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; }
+    &__theme {
+      display: grid;
+      place-items: center;
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: 50%;
+      transition: transform .45s cubic-bezier(.22,1,.36,1), border-color .3s ease, background .35s ease;
+      &:hover { border-color: color(accent); transform: rotate(-24deg) scale(1.06); }
+      &:active { transform: rotate(-12deg) scale(.94); }
+    }
     &__menu-button {
       position: relative;
       display: flex;
@@ -192,4 +244,17 @@ const menu = [
   :global(body.menu-open) { overflow: hidden; }
   @media (max-width: 900px) { .site-head__nav { display: none; } }
   @media (max-width: 540px) { .site-head__name { display: none; } .site-head__menu-button span { display: none; } }
+
+  :global(.theme-wipe) {
+    position: fixed;
+    inset: 0;
+    z-index: 995;
+    pointer-events: none;
+    transition: clip-path .85s cubic-bezier(.65, 0, .35, 1);
+    will-change: clip-path;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.theme-wipe) { display: none; }
+  }
 </style>

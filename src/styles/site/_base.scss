@@ -17,17 +17,40 @@ html {
   scroll-padding-top: 5rem;
   scrollbar-color: color(accent) color(primary);
   scrollbar-width: thin;
+  color-scheme: dark;
+  transition: background-color .5s ease, color .5s ease;
 }
+
+html.theme-contrasted { color-scheme: light; }
 
 body {
   min-width: 320px;
   margin: 0;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   background: color(primary);
   color: color(secondary);
   font-family: font-family(editorial);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color .5s ease, color .5s ease;
+}
+
+/* Elements that shift color on theme toggle get a soft crossfade instead of a hard cut. */
+.section,
+.system-card,
+.oss-card,
+.oss__lead-card,
+.oss__end-card,
+.timeline-item,
+.site-head,
+.site-menu__panel {
+  transition: background-color .5s ease, color .5s ease, border-color .5s ease, box-shadow .5s ease;
+}
+
+a, button, [data-magnetic], [data-cursor] {
+  touch-action: manipulation;
 }
 
 body:before {
