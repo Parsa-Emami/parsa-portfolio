@@ -2,7 +2,7 @@
 import { profile } from '../data/portfolio'
 ---
 
-<section class="hero" id="top" aria-labelledby="hero-title">
+<section class="hero" id="top" aria-labelledby="hero-title" data-header-tone="dark" data-section-name="Intro">
   <canvas class="hero__field" data-hero-field aria-hidden="true"></canvas>
   <div class="hero__shade" aria-hidden="true"></div>
 
@@ -31,6 +31,11 @@ import { profile } from '../data/portfolio'
       <div class="hero__intro">
         <p class="hero__role">{profile.headline}</p>
         <p class="hero__summary">{profile.summary}</p>
+        <div class="hero__proof" aria-label="Portfolio highlights">
+          <div><strong>03</strong><span>enterprise systems</span></div>
+          <div><strong>03</strong><span>public builds</span></div>
+          <div><strong>01</strong><span>adversary mindset</span></div>
+        </div>
       </div>
       <div class="hero__actions">
         <a href="#systems" class="hero-link" data-magnetic data-cursor="Explore">
@@ -136,7 +141,7 @@ import { profile } from '../data/portfolio'
         display: block;
         width: max-content;
         color: color(secondary);
-        will-change: transform;
+        will-change: transform, filter;
       }
       &--right {
         display: flex;
@@ -187,6 +192,24 @@ import { profile } from '../data/portfolio'
       line-height: 1.5;
     }
 
+    &__proof {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .55rem;
+      margin-top: 1.25rem;
+      div {
+        display: flex;
+        gap: .55rem;
+        align-items: baseline;
+        padding: .45rem .58rem;
+        border: 1px solid color(shadow);
+        background: color(primary, .34);
+        backdrop-filter: blur(8px);
+      }
+      strong { color: color(accent); font: 700 .62rem/1 font-family(fraktion); }
+      span { color: color(muted); font: 700 .48rem/1 font-family(fraktion); letter-spacing: .08em; text-transform: uppercase; }
+    }
+
     &__actions { display: grid; gap: .5rem; min-width: min(20rem, 28vw); }
     .hero-link {
       display: flex;
@@ -201,8 +224,11 @@ import { profile } from '../data/portfolio'
       letter-spacing: 0.07em;
       text-decoration: none;
       text-transform: uppercase;
+      transition: transform .45s cubic-bezier(.22,1,.36,1), box-shadow .45s cubic-bezier(.22,1,.36,1);
       will-change: transform;
-      &--quiet { border-color: color(shadow); background: color(primary, .78); color: color(secondary); backdrop-filter: blur(12px); }
+      @include gloss-sweep(.4);
+      &:hover { box-shadow: 0 1.4rem 2.6rem -1rem color(accent, .55); }
+      &--quiet { border-color: color(shadow); background: color(primary, .78); color: color(secondary); backdrop-filter: blur(12px); &:hover { box-shadow: 0 1.4rem 2.6rem -1.2rem rgba(0,0,0,.5); } }
     }
 
     &__scroll {

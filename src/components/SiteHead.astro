@@ -10,18 +10,18 @@ const menu = [
 ---
 
 <header class="site-head" data-site-head>
-  <a class="site-head__brand" href="#top" aria-label={`${profile.name} — Home`} data-nav-link data-cursor="Home">
+  <a class="site-head__brand" href="#top" aria-label={`${profile.name} — Home`} data-nav-link data-cursor="Home" data-magnetic>
     <span class="site-head__mark">PE</span>
     <span class="site-head__name"><strong>PARSA EMAMI</strong><i>ENGINEERING / SECURITY</i></span>
   </a>
 
-  <nav class="site-head__nav" aria-label="Primary navigation">
-    {menu.slice(0, 4).map((item) => <a href={`#${item.id}`} data-nav-link><i>{item.number}</i>{item.text}</a>)}
+  <nav class="site-head__nav" aria-label="Primary navigation" data-section-nav>
+    {menu.slice(0, 4).map((item) => <a href={`#${item.id}`} data-nav-link data-nav-target={item.id} data-magnetic><i>{item.number}</i>{item.text}</a>)}
   </nav>
 
   <div class="site-head__actions">
-    <button type="button" class="site-head__theme" data-theme-toggle aria-label="Toggle color theme" data-cursor="Theme">◐</button>
-    <button type="button" class="site-head__menu-button" data-menu-toggle aria-expanded="false" aria-controls="site-menu" data-cursor="Menu">
+    <button type="button" class="site-head__theme" data-theme-toggle aria-label="Toggle color theme" data-cursor="Theme" data-magnetic>◐</button>
+    <button type="button" class="site-head__menu-button" data-menu-toggle aria-expanded="false" aria-controls="site-menu" data-cursor="Menu" data-magnetic>
       <span>MENU</span><i></i><i></i>
     </button>
   </div>
@@ -138,6 +138,52 @@ const menu = [
   }
   window.addEventListener('scroll', onScroll, { passive: true })
   onScroll()
+
+  // Adapt navigation contrast to the art direction of the section crossing
+  // the viewport center. This keeps the fixed chrome readable over dark,
+  // paper-light, and accent-red scenes without hard-coded scroll positions.
+  const toneSections = Array.from(document.querySelectorAll('[data-header-tone]'))
+  if (head && toneSections.length && 'IntersectionObserver' in window) {
+    const setTone = (tone: string) => {
+      head.classList.remove('is-tone-dark', 'is-tone-light', 'is-tone-accent')
+      head.classList.add(`is-tone-${tone || 'dark'}`)
+    }
+    const toneObserver = new IntersectionObserver((entries) => {
+      const active = entries.find((entry) => entry.isIntersecting)
+      if (active) setTone(active.target.getAttribute('data-header-tone') || 'dark')
+    }, { rootMargin: '-48% 0px -48% 0px', threshold: 0 })
+    toneSections.forEach((section) => toneObserver.observe(section))
+    setTone(toneSections[0]?.getAttribute('data-header-tone') || 'dark')
+  }
+
+  // Keep the primary nav honest about where the user actually is: whichever
+  // section owns the vertical center of the viewport gets the active state,
+  // with a soft underline that animates in rather than snapping.
+  const navLinks = document.querySelectorAll('[data-nav-target]')
+  if (navLinks.length) {
+    const sections = Array.from(navLinks)
+      .map((link) => document.getElementById(link.getAttribute('data-nav-target') || ''))
+      .filter((section) => section instanceof Element)
+
+    const setActive = (id: string | null) => {
+      navLinks.forEach((link) => {
+        link.classList.toggle('is-active', !!id && link.getAttribute('data-nav-target') === id)
+      })
+    }
+
+    if (sections.length && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+          if (visible) setActive(visible.target.id)
+        },
+        { rootMargin: '-42% 0px -42% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] }
+      )
+      sections.forEach((section) => observer.observe(section as Element))
+    }
+  }
 </script>
 
 <style lang="scss">
@@ -158,6 +204,19 @@ const menu = [
     transition: transform .5s cubic-bezier(.22,1,.36,1), background .35s ease, border-color .35s ease;
 
     &.is-scrolled { border-color: color(shadow); background: color(primary, .78); backdrop-filter: blur(18px); }
+    &.is-tone-light {
+      color: color(primary);
+      &.is-scrolled { border-color: color(primary, .16); background: color(secondary, .82); }
+      .site-head__name i, .site-head__nav a { color: color(primary, .58); }
+      .site-head__mark, .site-head__theme, .site-head__menu-button { border-color: color(primary, .28); }
+    }
+    &.is-tone-accent {
+      color: color(white);
+      &.is-scrolled { border-color: color(white, .24); background: color(accent, .8); }
+      .site-head__name i, .site-head__nav a { color: color(white, .72); }
+      .site-head__nav a i { color: color(white); }
+      .site-head__mark, .site-head__theme, .site-head__menu-button { border-color: color(white, .42); }
+    }
     &.is-hidden { transform: translateY(-105%); }
     &__brand { display: flex; align-items: center; gap: .75rem; color: inherit; text-decoration: none; }
     &__mark {
@@ -171,7 +230,40 @@ const menu = [
       letter-spacing: -.07em;
     }
     &__name { display: grid; gap: .14rem; font-family: font-family(fraktion); strong { font-size: .68rem; letter-spacing: 0.056em; } i { color: color(muted); font-size: .52rem; letter-spacing: 0.112em; } }
-    &__nav { display: flex; justify-content: center; gap: clamp(1rem, 2vw, 2.2rem); a { display: flex; gap: .42rem; color: color(muted); font: 700 .58rem/1 font-family(fraktion); letter-spacing: 0.07em; text-decoration: none; text-transform: uppercase; transition: color .2s ease; i { color: color(accent); font-size: .48rem; } &:hover { color: color(secondary); } } }
+    &__nav {
+      display: flex;
+      justify-content: center;
+      gap: clamp(1rem, 2vw, 2.2rem);
+      a {
+        position: relative;
+        display: flex;
+        gap: .42rem;
+        padding-bottom: .5rem;
+        color: color(muted);
+        font: 700 .58rem/1 font-family(fraktion);
+        letter-spacing: 0.07em;
+        text-decoration: none;
+        text-transform: uppercase;
+        transition: color .3s ease;
+        i { color: color(accent); font-size: .48rem; }
+        &:after {
+          position: absolute;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          height: 1px;
+          background: color(accent);
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform .45s cubic-bezier(.22,1,.36,1);
+          content: '';
+        }
+        &:hover { color: color(secondary); }
+        &:hover:after { transform: scaleX(1); }
+        &.is-active { color: color(secondary); }
+        &.is-active:after { transform: scaleX(1); }
+      }
+    }
     &__actions { display: flex; gap: .45rem; align-items: center; }
     &__theme, &__menu-button { border: 1px solid color(shadow); background: color(primary, .55); color: color(secondary); cursor: pointer; backdrop-filter: blur(10px); }
     &__theme {

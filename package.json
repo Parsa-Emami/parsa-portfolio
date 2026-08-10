@@ -1,7 +1,7 @@
 {
   "name": "parsa-emami-portfolio",
   "type": "module",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Portfolio of Parsa Emami — Software Engineer, Security Architect, Red Team, and AI engineering practitioner.",
   "private": true,
   "scripts": {

@@ -1,60 +1,83 @@
-# Antoine Wodniack – Portfolio (Open Source Edition)
+# Parsa Emami — Premium Portfolio
 
-Welcome to the public source of my personal portfolio – [wodniack.dev](https://wodniack.dev), built with [Astro](https://astro.build).
+A cinematic, interaction-led portfolio for **Parsa Emami** focused on software engineering, software architecture, security engineering, Red Team thinking, applied AI, and production systems.
 
-This project performed far beyond my expectations and brought an overwhelming amount of positive feedback.
-Thanks for the love. ❤️
+## Experience design
 
-I said that if I won a Webby, I’d open-source it. Mission accomplished. 🥳
+The page is intentionally structured as a changing scroll journey rather than a stack of identical sections:
 
-I’m open-sourcing it so that junior developers, curious minds, and future portfolio crafters can **learn from real-world code**, understand how things are built, and get inspired to build their own.
+- Interactive canvas hero with pointer-reactive engineering field
+- Fast branded loader and editorial title choreography
+- Lenis smooth scrolling integrated with GSAP ScrollTrigger
+- Pinned **READ → MODEL → BREAK → PROVE** operating-philosophy sequence
+- Split-line editorial reveals and depth-based parallax
+- Capability cards with magnetic/tilt micro-interactions
+- Pinned enterprise-system card deck
+- Horizontal open-source gallery on desktop with mobile stacked fallback
+- Scroll-driven timeline, CTA choreography, section HUD, progress rail, and cursor feedback
+- Automatic fixed-navigation contrast across dark, light, and accent scenes
+- Motion-reduced and coarse-pointer fallbacks for accessibility and mobile stability
 
-🚫 **Don't copy/paste it as-is and call it yours.** The community will notice, and you’ll doom yourself to eternal mediocrity.
-✅ **Do explore, dissect, and adapt it with purpose.**
+## Stack
 
----
+- Astro 5
+- GSAP 3 + ScrollTrigger + SplitText
+- Lenis
+- Sass
+- TypeScript-flavoured client scripts
 
-## 🚀 Getting Started
-
-To run the project locally:
+## Local development
 
 ```bash
-# 1. Clone this repo
-git clone https://github.com/AntoineW/AW-2025-Portfolio.git
-cd wodniack-portfolio
-
-# 2. Install dependencies
 npm install
-
-# 3. Start the dev server
 npm run dev
 ```
 
----
+Then open the URL printed by Astro.
 
-## 🧠 Why This Is Open
-Curiosity and learning are everything in creative development.
-I learned the most by studying real code—Codrops demos, CodePen experiments, random GitHub repos.
-This portfolio gave me way more visibility than I expected. Now it’s time to return the love.
+## Production build
 
----
+```bash
+npm run build
+npm run preview
+```
 
-## 📄 License
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
+The Astro config is currently prepared for GitHub Pages at:
 
-That means:
+```text
+https://parsa-emami.github.io/parsa-portfolio/
+```
 
-✅ You can learn from it, fork it, and adapt it for non-commercial purposes.
+If the deployment path changes, update `site` and `base` in `astro.config.mjs` and the canonical URL in `src/pages/index.astro`.
 
-🚫 You can’t resell it, rebrand it, or use it commercially without permission.
+## Main content
 
-🔗 You must credit the source (me) if you use parts of it.
+Portfolio content is centralized in:
 
-See LICENSE.md for full details.
+```text
+src/data/portfolio.ts
+```
 
----
+That file contains profile information, capabilities, enterprise systems, open-source projects, experience, education, and research themes.
 
-## 💬 Final Word
+## Motion system
 
-This is not a template. It's a real portfolio, shared with intent.
-Use it to get better. Not to take shortcuts.
+The main interaction orchestration lives in:
+
+```text
+src/components/MotionSystem.astro
+```
+
+Section-specific layouts remain inside their own Astro components so animation logic and content structure do not collapse into one monolithic page file.
+
+## Accessibility and performance notes
+
+- `prefers-reduced-motion` disables cinematic animation paths.
+- Desktop-only pinning/tilt behavior falls back to stacked content on smaller screens.
+- The hero canvas pauses when it is outside the viewport.
+- ScrollTrigger ignores mobile address-bar resize churn to reduce stutter.
+- Pointer-only effects are skipped for coarse/touch input.
+
+## Attribution / license
+
+This portfolio started from concepts/code adapted from Antoine Wodniack's AW 2025 Portfolio open-source release. The original attribution is preserved in the site footer and `LICENSE.md`. Review the license before any commercial use.

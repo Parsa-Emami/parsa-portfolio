@@ -2,7 +2,7 @@
 import { profile } from '../data/portfolio'
 ---
 
-<section class="cta" id="contact" aria-labelledby="cta-title">
+<section class="cta" id="contact" aria-labelledby="cta-title" data-header-tone="accent" data-section-name="Contact">
   <div class="cta__grid" aria-hidden="true"></div>
   <div class="site-shell cta__shell">
     <div class="cta__meta" data-reveal>
@@ -98,12 +98,16 @@ import { profile } from '../data/portfolio'
       justify-content: space-between;
       align-items: center;
       gap: 2rem;
-      padding: 1.25rem 0;
+      padding: 1.25rem 1rem;
+      margin: 0 -1rem;
       border-bottom: 1px solid rgba(255,255,255,.55);
       color: color(white);
       font-family: font-family(fraktion);
       text-decoration: none;
+      transition: background-color .4s cubic-bezier(.22,1,.36,1), padding-left .4s cubic-bezier(.22,1,.36,1);
       will-change: transform;
+      @include gloss-sweep(.5);
+      &:hover { background: rgba(255,255,255,.08); padding-left: 1.6rem; }
       span { font-size: .9rem; font-weight: 700; text-transform: uppercase; i { margin-right: .75rem; font-size: .55rem; opacity: .55; } }
       b { font-size: .57rem; font-weight: 700; letter-spacing: 0.098em; }
     }

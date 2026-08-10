@@ -3,6 +3,14 @@
   <span class="ambient-field__blob ambient-field__blob--b"></span>
 </div>
 
+<div class="motion-light" data-motion-light aria-hidden="true"></div>
+
+<div class="motion-chapter" aria-hidden="true">
+  <span class="motion-chapter__eyebrow">NOW VIEWING</span>
+  <span class="motion-chapter__name" data-section-name-current>Intro</span>
+  <span class="motion-chapter__index" data-section-index-current>01 / 07</span>
+</div>
+
 <div class="motion-loader" data-motion-loader aria-hidden="true">
   <div class="motion-loader__top">
     <span>PE / PORTFOLIO SYSTEM</span>
@@ -17,6 +25,7 @@
 <div class="motion-cursor" data-motion-cursor aria-hidden="true">
   <span class="motion-cursor__dot"></span>
   <span class="motion-cursor__ring"></span>
+  <span class="motion-cursor__pulse" data-cursor-pulse></span>
   <span class="motion-cursor__label" data-cursor-label></span>
 </div>
 
@@ -52,11 +61,11 @@
   const bootSmoothScroll = () => {
     if (reduceMotion) return
     lenis = new Lenis({
-      duration: 1.15,
+      duration: 1.32,
       smoothWheel: true,
       syncTouch: false,
-      wheelMultiplier: 0.92,
-      touchMultiplier: 1.15,
+      wheelMultiplier: 0.86,
+      touchMultiplier: 1.08,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     })
     lenis.on('scroll', ScrollTrigger.update)
@@ -76,28 +85,33 @@
 
     return new Promise((resolve) => {
       const counter = { value: 0 }
+      const main = document.querySelector('main')
+      if (main) gsap.set(main, { scale: 1.045, filter: 'blur(9px)', transformOrigin: '50% 50%' })
+
       const tl = gsap.timeline({
         defaults: { ease: 'expo.inOut' },
         onComplete: () => {
           loader.remove()
           body.classList.add('is-ready')
           lenis?.start()
+          if (main) gsap.set(main, { clearProps: 'transform,filter,transformOrigin' })
           resolve()
         },
       })
 
       tl.to(counter, {
         value: 100,
-        duration: 1.45,
+        duration: 1.05,
         ease: 'power3.out',
         onUpdate: () => {
           if (loaderCounter) loaderCounter.textContent = String(Math.round(counter.value)).padStart(3, '0')
           if (loaderRail) loaderRail.style.transform = `scaleX(${counter.value / 100})`
         },
       })
-      tl.fromTo(loaderWord?.children || [], { yPercent: 120 }, { yPercent: 0, stagger: 0.08, duration: 1.05 }, 0.15)
-      tl.to(loaderWord?.children || [], { yPercent: -120, stagger: 0.04, duration: 0.8 }, 1.25)
-      tl.to(loader, { clipPath: 'inset(0 0 100% 0)', duration: 1.05 }, 1.45)
+      tl.fromTo(loaderWord?.children || [], { yPercent: 120 }, { yPercent: 0, stagger: 0.08, duration: 0.82 }, 0.12)
+      tl.to(loaderWord?.children || [], { yPercent: -120, stagger: 0.04, duration: 0.62 }, 0.9)
+      tl.to(loader, { clipPath: 'inset(0 0 100% 0)', duration: 0.82 }, 1.08)
+      if (main) tl.to(main, { scale: 1, filter: 'blur(0px)', duration: 1.0, ease: 'expo.out' }, 1.02)
     })
   }
 
@@ -224,18 +238,32 @@
         if (label) label.textContent = ''
       })
     })
+
+    // A short-lived expanding ring on every click/tap gives pointer input a
+    // satisfying, tactile confirmation without ever blocking the click itself.
+    const pulse = document.querySelector('[data-cursor-pulse]')
+    if (pulse) {
+      window.addEventListener('pointerdown', (event) => {
+        gsap.killTweensOf(pulse)
+        gsap.set(pulse, { x: event.clientX, y: event.clientY, xPercent: -50, yPercent: -50, scale: 0.3, opacity: 0.65 })
+        gsap.to(pulse, { scale: 1.8, opacity: 0, duration: .65, ease: 'power2.out' })
+      }, { passive: true })
+    }
   }
 
   const initGlobalReveals = () => {
     if (reduceMotion) return
 
-    document.querySelectorAll('[data-reveal]').forEach((element) => {
+    document.querySelectorAll('[data-reveal]').forEach((element, index) => {
       gsap.fromTo(element,
-        { y: 44, opacity: 0 },
+        { y: 54, opacity: 0, scale: .975, filter: 'blur(14px)' },
         {
           y: 0,
           opacity: 1,
-          duration: 1.15,
+          scale: 1,
+          filter: 'blur(0px)',
+          duration: 1.3,
+          delay: (index % 3) * 0.04,
           ease: 'expo.out',
           scrollTrigger: { trigger: element, start: 'top 88%', once: true },
         }
@@ -251,10 +279,11 @@
         line.appendChild(inner)
       })
       gsap.fromTo(element.querySelectorAll('.motion-line__inner'),
-        { yPercent: 118, rotate: 2 },
+        { yPercent: 118, rotate: 2, filter: 'blur(9px)' },
         {
           yPercent: 0,
           rotate: 0,
+          filter: 'blur(0px)',
           duration: 1.35,
           stagger: 0.075,
           ease: 'expo.out',
@@ -281,10 +310,10 @@
     const meta = hero.querySelectorAll('[data-hero-meta]')
     const orbit = hero.querySelector('[data-hero-orbit]')
 
-    gsap.set(lines, { yPercent: 115, rotate: 3 })
+    gsap.set(lines, { yPercent: 115, rotate: 3, filter: 'blur(18px)' })
     gsap.set(meta, { opacity: 0, y: 24 })
     gsap.timeline({ delay: 0.05 })
-      .to(lines, { yPercent: 0, rotate: 0, duration: 1.55, stagger: 0.12, ease: 'expo.out' })
+      .to(lines, { yPercent: 0, rotate: 0, filter: 'blur(0px)', duration: 1.55, stagger: 0.12, ease: 'expo.out' })
       .to(meta, { opacity: 1, y: 0, duration: 0.85, stagger: 0.08, ease: 'power3.out' }, '-=0.85')
       .fromTo(orbit, { scale: 0.65, rotate: -45, opacity: 0 }, { scale: 1, rotate: 0, opacity: 1, duration: 1.3, ease: 'expo.out' }, '-=1.15')
 
@@ -304,6 +333,70 @@
       ease: 'none',
       scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 1 },
     })
+  }
+
+  const initManifestMotion = () => {
+    if (reduceMotion || !desktop.matches) return
+    const section = document.querySelector('.manifest')
+    const pin = section?.querySelector('[data-manifest-pin]')
+    const beats = section?.querySelectorAll('[data-manifest-beat]')
+    const meter = section?.querySelector('[data-manifest-meter]')
+    const current = section?.querySelector('[data-manifest-current]')
+    const core = section?.querySelector('[data-manifest-core]')
+    const ghost = section?.querySelector('.manifest__ghost')
+    if (!section || !pin || !beats?.length) return
+
+    beats.forEach((beat, index) => {
+      if (index === 0) gsap.set(beat, { autoAlpha: 1, y: 0, filter: 'blur(0px)' })
+      else gsap.set(beat, { autoAlpha: 0, y: 44, filter: 'blur(12px)' })
+    })
+
+    const setCurrent = (index) => {
+      beats.forEach((beat, beatIndex) => beat.classList.toggle('is-active', beatIndex === index))
+      if (current) current.textContent = String(index + 1).padStart(2, '0')
+    }
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: section,
+        start: 'top top',
+        end: 'bottom bottom',
+        pin,
+        pinSpacing: false,
+        scrub: 0.9,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => setCurrent(Math.min(beats.length - 1, Math.floor(self.progress * beats.length))),
+      },
+    })
+
+    beats.forEach((beat, index) => {
+      if (index === 0) return
+      const previous = beats[index - 1]
+      tl.to(previous, { autoAlpha: 0, y: -44, filter: 'blur(12px)', duration: .48, ease: 'none' })
+        .fromTo(beat,
+          { autoAlpha: 0, y: 44, filter: 'blur(12px)' },
+          { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: .52, ease: 'none' },
+          '<.12'
+        )
+      if (meter) tl.to(meter, { scaleX: (index + 1) / beats.length, duration: .52, ease: 'none' }, '<')
+    })
+
+    if (core) {
+      gsap.to(core, {
+        rotate: 300,
+        scale: 1.12,
+        ease: 'none',
+        scrollTrigger: { trigger: section, start: 'top top', end: 'bottom bottom', scrub: 1.2 },
+      })
+    }
+    if (ghost) {
+      gsap.fromTo(ghost, { xPercent: -4 }, {
+        xPercent: 4,
+        ease: 'none',
+        scrollTrigger: { trigger: section, start: 'top top', end: 'bottom bottom', scrub: 1.4 },
+      })
+    }
   }
 
   const initAboutMotion = () => {
@@ -486,17 +579,51 @@
     )
     cards.forEach((card, index) => {
       gsap.fromTo(card,
-        { y: 46, opacity: 0, scale: 0.985 },
+        { y: 46, opacity: 0, scale: 0.985, filter: 'blur(10px)' },
         {
           y: 0,
           opacity: 1,
           scale: 1,
+          filter: 'blur(0px)',
           duration: 0.9,
           delay: (index % 2) * 0.05,
           ease: 'power3.out',
           scrollTrigger: { trigger: card, start: 'top 92%', once: true },
         }
       )
+    })
+  }
+
+  // Gives cards a light, physically-plausible tilt toward the pointer —
+  // desktop only, and skipped for anything already animated by a pinned
+  // ScrollTrigger timeline that owns its own transform (handled by composing
+  // rotationX/Y/Z on top of whatever x/y/rotate that timeline is driving).
+  const initTilt = () => {
+    if (coarsePointer || reduceMotion || !desktop.matches) return
+    document.querySelectorAll('[data-tilt]').forEach((card) => {
+      if (!(card instanceof HTMLElement)) return
+      const strength = Number(card.getAttribute('data-tilt')) || 6
+      const inheritsPerspective = card.getAttribute('data-tilt-perspective') === 'inherit'
+      if (!inheritsPerspective) gsap.set(card, { transformPerspective: 950 })
+      gsap.set(card, { transformStyle: 'preserve-3d' })
+
+      const setRX = gsap.quickTo(card, 'rotationX', { duration: .7, ease: 'power3.out' })
+      const setRY = gsap.quickTo(card, 'rotationY', { duration: .7, ease: 'power3.out' })
+      const setZ = gsap.quickTo(card, 'z', { duration: .7, ease: 'power3.out' })
+
+      card.addEventListener('pointermove', (event) => {
+        const rect = card.getBoundingClientRect()
+        const px = (event.clientX - rect.left) / rect.width - 0.5
+        const py = (event.clientY - rect.top) / rect.height - 0.5
+        setRY(px * strength)
+        setRX(py * -strength)
+        setZ(16)
+      })
+      card.addEventListener('pointerleave', () => {
+        setRX(0)
+        setRY(0)
+        setZ(0)
+      })
     })
   }
 
@@ -513,6 +640,37 @@
         gsap.to(element, { x: 0, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.45)' })
       })
     })
+  }
+
+  const initPointerLight = () => {
+    if (coarsePointer || reduceMotion) return
+    const light = document.querySelector('[data-motion-light]')
+    if (!light) return
+    const moveX = gsap.quickTo(light, 'x', { duration: 1.1, ease: 'power3.out' })
+    const moveY = gsap.quickTo(light, 'y', { duration: 1.1, ease: 'power3.out' })
+    window.addEventListener('pointermove', (event) => {
+      moveX(event.clientX)
+      moveY(event.clientY)
+    }, { passive: true })
+  }
+
+  const initSectionHUD = () => {
+    const name = document.querySelector('[data-section-name-current]')
+    const index = document.querySelector('[data-section-index-current]')
+    const sections = Array.from(document.querySelectorAll('[data-section-name]'))
+    if (!name || !index || !sections.length) return
+
+    const update = (section) => {
+      const currentIndex = sections.indexOf(section)
+      name.textContent = section.getAttribute('data-section-name') || 'Portfolio'
+      index.textContent = `${String(currentIndex + 1).padStart(2, '0')} / ${String(sections.length).padStart(2, '0')}`
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.find((entry) => entry.isIntersecting)
+      if (visible) update(visible.target)
+    }, { rootMargin: '-48% 0px -48% 0px', threshold: 0 })
+    sections.forEach((section) => observer.observe(section))
   }
 
   const initProgress = () => {
@@ -533,11 +691,14 @@
     bootSmoothScroll()
     initHeroField()
     initCursor()
+    initPointerLight()
     initProgress()
+    initSectionHUD()
     initAmbientField()
     await runLoader()
     initHeroMotion()
     initGlobalReveals()
+    initManifestMotion()
     initAboutMotion()
     initSystemsMotion()
     initOpenSourceMotion()
@@ -545,6 +706,7 @@
     initExperienceMotion()
     initCTAMotion()
     initMagnetic()
+    initTilt()
     requestAnimationFrame(() => ScrollTrigger.refresh())
   }
 
@@ -557,6 +719,44 @@
 
 <style lang="scss" is:global>
   body:not(.is-ready) { overflow: hidden; }
+
+  .motion-light {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    width: min(46vw, 40rem);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, color(accent, .07) 0%, color(accent, .025) 34%, transparent 70%);
+    transform: translate(-50%, -50%);
+    filter: blur(1.2rem);
+    pointer-events: none;
+    mix-blend-mode: screen;
+    will-change: transform;
+  }
+
+  .motion-chapter {
+    position: fixed;
+    left: clamp(.9rem, 1.6vw, 1.6rem);
+    bottom: clamp(1rem, 2vw, 2rem);
+    z-index: 58;
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: .22rem 1rem;
+    align-items: end;
+    padding: .65rem .75rem;
+    border: 1px solid color(shadow);
+    background: color(primary, .62);
+    backdrop-filter: blur(14px);
+    font-family: font-family(fraktion);
+    text-transform: uppercase;
+    pointer-events: none;
+
+    &__eyebrow { grid-column: 1 / -1; color: color(muted); font-size: .46rem; letter-spacing: .14em; }
+    &__name { color: color(secondary); font-size: .58rem; font-weight: 700; letter-spacing: .08em; }
+    &__index { color: color(accent); font-size: .5rem; font-weight: 700; letter-spacing: .08em; }
+  }
 
   .ambient-field {
     position: fixed;
@@ -692,6 +892,19 @@
       white-space: nowrap;
     }
 
+    &__pulse {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 34px;
+      height: 34px;
+      border: 1px solid #fff;
+      border-radius: 50%;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      will-change: transform, opacity;
+    }
+
     &.is-active .motion-cursor__ring {
       width: 72px;
       height: 72px;
@@ -731,11 +944,11 @@
     }
   }
 
-  .motion-line { overflow: hidden; }
-  .motion-line__inner { display: block; will-change: transform; }
+  .motion-line { overflow: hidden; padding-bottom: .06em; }
+  .motion-line__inner { display: block; will-change: transform, filter; }
 
   @media (pointer: coarse), (max-width: 900px) {
-    .motion-cursor, .motion-progress { display: none; }
+    .motion-cursor, .motion-progress, .motion-light, .motion-chapter { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {

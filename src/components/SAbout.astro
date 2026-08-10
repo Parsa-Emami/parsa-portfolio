@@ -2,7 +2,7 @@
 import { capabilities, profile } from '../data/portfolio'
 ---
 
-<section class="about section" id="about" aria-labelledby="about-title">
+<section class="about section" id="about" aria-labelledby="about-title" data-header-tone="dark" data-section-name="Profile">
   <div class="site-shell">
     <div class="section-heading about__heading" data-reveal>
       <span class="section-number">01</span>
@@ -45,7 +45,7 @@ import { capabilities, profile } from '../data/portfolio'
 
     <div class="about__capabilities">
       {capabilities.map((item, index) => (
-        <article class="capability" data-reveal data-cursor={item.title}>
+        <article class="capability" data-reveal data-cursor={item.title} data-tilt="5">
           <div class="capability__top"><span>{item.index}</span><i>{String(index + 1).padStart(2, '0')} / {String(capabilities.length).padStart(2, '0')}</i></div>
           <h3>{item.title}</h3>
           <p>{item.description}</p>

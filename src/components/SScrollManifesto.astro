@@ -1,0 +1,325 @@
+---
+const beats = [
+  {
+    number: '01',
+    verb: 'READ',
+    title: 'Find the real system.',
+    copy: 'Before changing code, trace the rule, the data, the state, and the place where reality actually lives.',
+    tag: 'SOURCE OF TRUTH',
+  },
+  {
+    number: '02',
+    verb: 'MODEL',
+    title: 'Make complexity visible.',
+    copy: 'Turn hidden constraints into explicit boundaries, contracts, domain rules, and behavior people can reason about.',
+    tag: 'ARCHITECTURE',
+  },
+  {
+    number: '03',
+    verb: 'BREAK',
+    title: 'Think like the failure.',
+    copy: 'Attack paths, misuse cases, edge conditions, and operational pressure expose what a happy-path diagram never will.',
+    tag: 'ADVERSARY MINDSET',
+  },
+  {
+    number: '04',
+    verb: 'PROVE',
+    title: 'Ship with evidence.',
+    copy: 'Tests, observability, deterministic outputs, and release discipline turn confidence from a feeling into a property.',
+    tag: 'RELIABILITY',
+  },
+]
+---
+
+<section class="manifest" id="manifest" aria-labelledby="manifest-title" data-header-tone="dark" data-section-name="Method">
+  <div class="manifest__pin" data-manifest-pin>
+    <div class="manifest__grid" aria-hidden="true"></div>
+    <div class="manifest__halo" aria-hidden="true"><i></i><i></i><i></i></div>
+
+    <div class="site-shell manifest__shell">
+      <div class="manifest__top">
+        <span>00 / OPERATING PHILOSOPHY</span>
+        <span>SCROLL TO RUN THE SEQUENCE</span>
+      </div>
+
+      <h2 id="manifest-title" class="manifest__ghost" aria-hidden="true">SYSTEM</h2>
+
+      <div class="manifest__stage">
+        <div class="manifest__index" aria-hidden="true">
+          <span data-manifest-current>01</span><i>/</i><span>04</span>
+        </div>
+
+        <div class="manifest__core" data-manifest-core aria-hidden="true">
+          <div class="manifest__core-ring manifest__core-ring--outer"></div>
+          <div class="manifest__core-ring manifest__core-ring--inner"></div>
+          <span>PE</span>
+          <i class="manifest__core-dot manifest__core-dot--a"></i>
+          <i class="manifest__core-dot manifest__core-dot--b"></i>
+          <i class="manifest__core-dot manifest__core-dot--c"></i>
+        </div>
+
+        <div class="manifest__beats">
+          {beats.map((beat, index) => (
+            <article class={`manifest-beat ${index === 0 ? 'is-active' : ''}`} data-manifest-beat data-beat-index={index}>
+              <div class="manifest-beat__meta"><span>{beat.number}</span><b>{beat.tag}</b></div>
+              <p class="manifest-beat__verb">{beat.verb}</p>
+              <h3>{beat.title}</h3>
+              <p class="manifest-beat__copy">{beat.copy}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      <div class="manifest__bottom">
+        <span>INPUT / CHAOS</span>
+        <div class="manifest__rail"><i data-manifest-meter></i></div>
+        <span>OUTPUT / CLARITY</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style lang="scss">
+  .manifest {
+    position: relative;
+    min-height: 400svh;
+    background: color(primary);
+    color: color(secondary);
+
+    &__pin {
+      position: relative;
+      min-height: 100svh;
+      overflow: hidden;
+      isolation: isolate;
+      border-top: 1px solid color(shadow);
+      border-bottom: 1px solid color(shadow);
+    }
+
+    &__grid {
+      position: absolute;
+      inset: 0;
+      z-index: -3;
+      opacity: .42;
+      background-image:
+        linear-gradient(color(shadow, .52) 1px, transparent 1px),
+        linear-gradient(90deg, color(shadow, .52) 1px, transparent 1px);
+      background-size: clamp(3rem, 6vw, 6.5rem) clamp(3rem, 6vw, 6.5rem);
+      mask-image: radial-gradient(circle at center, #000 0 32%, transparent 78%);
+    }
+
+    &__halo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: -2;
+      width: min(68vw, 62rem);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+
+      &:before {
+        position: absolute;
+        inset: 18%;
+        border-radius: 50%;
+        background: radial-gradient(circle, color(accent, .14), color(accent, .03) 46%, transparent 72%);
+        filter: blur(1.5rem);
+        content: '';
+      }
+
+      i {
+        position: absolute;
+        inset: 0;
+        border: 1px solid color(shadow);
+        border-radius: 50%;
+        &:nth-child(2) { inset: 14%; border-style: dashed; opacity: .8; }
+        &:nth-child(3) { inset: 29%; border-color: color(accent, .62); }
+      }
+    }
+
+    &__shell {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100svh;
+      padding-top: clamp(6.2rem, 9vh, 8rem);
+      padding-bottom: clamp(2rem, 4vh, 3.5rem);
+    }
+
+    &__top,
+    &__bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 2rem;
+      align-items: center;
+      font: 700 .56rem/1 font-family(fraktion);
+      letter-spacing: .112em;
+      text-transform: uppercase;
+    }
+    &__top { color: color(muted); }
+
+    &__ghost {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: -1;
+      margin: 0;
+      color: transparent;
+      -webkit-text-stroke: 1px color(shadow, .8);
+      font: 700 clamp(8rem, 25vw, 25rem)/.7 font-family(bigger);
+      letter-spacing: -.075em;
+      text-transform: uppercase;
+      transform: translate(-50%, -48%);
+      opacity: .56;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    &__stage {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(7rem, .25fr) minmax(220px, .5fr) minmax(0, 1.25fr);
+      gap: clamp(2rem, 6vw, 7rem);
+      align-items: center;
+      min-height: 0;
+    }
+
+    &__index {
+      align-self: end;
+      display: flex;
+      gap: .45rem;
+      padding-bottom: 1rem;
+      color: color(muted);
+      font: 700 .65rem/1 font-family(fraktion);
+      letter-spacing: .084em;
+      span:first-child { color: color(accent); }
+      i { opacity: .4; }
+    }
+
+    &__core {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: min(25vw, 18rem);
+      aspect-ratio: 1;
+      justify-self: center;
+      border: 1px solid color(accent);
+      border-radius: 50%;
+      color: color(accent);
+      will-change: transform;
+
+      > span { font: 700 clamp(.8rem, 1.3vw, 1.2rem)/1 font-family(fraktion); letter-spacing: -.05em; }
+    }
+
+    &__core-ring {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      &--outer { inset: -20%; border: 1px solid color(shadow); }
+      &--inner { inset: 20%; border: 1px dashed color(accent, .7); }
+    }
+
+    &__core-dot {
+      position: absolute;
+      width: .5rem;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: color(accent);
+      box-shadow: 0 0 0 .4rem color(accent, .1), 0 0 2rem color(accent, .55);
+      &--a { top: -21%; left: 50%; }
+      &--b { right: -21%; top: 50%; }
+      &--c { bottom: -21%; left: 24%; }
+    }
+
+    &__beats {
+      position: relative;
+      min-height: clamp(28rem, 55vh, 38rem);
+    }
+
+    &__bottom {
+      color: color(muted);
+      .manifest__rail {
+        flex: 1;
+        height: 1px;
+        overflow: hidden;
+        background: color(shadow);
+        i { display: block; width: 100%; height: 100%; background: color(accent); transform: scaleX(.25); transform-origin: left; }
+      }
+    }
+  }
+
+  .manifest-beat {
+    position: absolute;
+    inset: 50% 0 auto 0;
+    transform: translateY(-50%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    will-change: transform, opacity, filter;
+
+    &.is-active { opacity: 1; visibility: visible; }
+
+    &__meta {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid color(shadow);
+      font: 700 .58rem/1 font-family(fraktion);
+      letter-spacing: .112em;
+      text-transform: uppercase;
+      span { color: color(accent); }
+      b { color: color(muted); font-weight: 400; }
+    }
+
+    &__verb {
+      margin: clamp(2rem, 5vh, 4rem) 0 0;
+      color: color(accent);
+      font: 700 clamp(5rem, 11vw, 11rem)/.66 font-family(bigger);
+      letter-spacing: -.075em;
+      text-transform: uppercase;
+    }
+
+    h3 {
+      max-width: 48rem;
+      margin: clamp(1rem, 2vh, 1.5rem) 0 0;
+      font: 200 clamp(2.2rem, 4.5vw, 5rem)/.92 font-family(editorial);
+      letter-spacing: -.055em;
+    }
+
+    &__copy {
+      max-width: 38rem;
+      margin: 1.3rem 0 0;
+      color: color(muted);
+      font-size: clamp(.88rem, 1vw, 1rem);
+      line-height: 1.58;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .manifest { min-height: auto; padding: 6rem 0; }
+    .manifest__pin { min-height: auto; overflow: visible; border: 0; }
+    .manifest__shell { display: block; min-height: auto; padding-top: 0; padding-bottom: 0; }
+    .manifest__top { margin-bottom: 3rem; }
+    .manifest__top span:last-child, .manifest__ghost, .manifest__halo, .manifest__core, .manifest__index, .manifest__bottom { display: none; }
+    .manifest__stage { display: block; }
+    .manifest__beats { display: grid; gap: 1rem; min-height: 0; }
+    .manifest-beat {
+      position: relative;
+      inset: auto;
+      min-height: 29rem;
+      padding: 1.5rem;
+      border: 1px solid color(shadow);
+      background: color(primary);
+      transform: none;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      &__verb { margin-top: 5rem; font-size: clamp(4.6rem, 20vw, 8rem); }
+    }
+  }
+
+  @media (max-width: 560px) {
+    .manifest__top { align-items: flex-start; flex-direction: column; gap: .6rem; }
+    .manifest-beat { min-height: 27rem; }
+  }
+</style>

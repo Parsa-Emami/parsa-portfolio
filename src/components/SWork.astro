@@ -2,7 +2,7 @@
 import { systems } from '../data/portfolio'
 ---
 
-<section class="systems" id="systems" aria-labelledby="systems-title">
+<section class="systems" id="systems" aria-labelledby="systems-title" data-header-tone="light" data-section-name="Systems">
   <div class="systems__pin">
     <div class="site-shell systems__shell">
       <div class="systems__header">
@@ -20,7 +20,7 @@ import { systems } from '../data/portfolio'
 
         <div class="systems__deck">
           {systems.map((system, index) => (
-            <article class={`system-card system-card--${index + 1}`} data-cursor="Case study">
+            <article class={`system-card system-card--${index + 1}`} data-cursor="Case study" data-tilt="4" data-tilt-perspective="inherit">
               <div class="system-card__noise" aria-hidden="true"></div>
               <header class="system-card__head">
                 <div><span>{system.number}</span><b>{system.type}</b></div>

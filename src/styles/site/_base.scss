@@ -55,12 +55,30 @@ a, button, [data-magnetic], [data-cursor] {
 
 body:before {
   position: fixed;
-  inset: 0;
+  inset: -10%;
   z-index: 900;
-  opacity: .035;
+  width: 120%;
+  height: 120%;
+  opacity: .045;
   pointer-events: none;
   content: '';
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  animation: grain-flicker 8s steps(10) infinite;
+  will-change: transform;
+}
+
+@keyframes grain-flicker {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  10% { transform: translate3d(-2%, -3%, 0); }
+  20% { transform: translate3d(-4%, 2%, 0); }
+  30% { transform: translate3d(2%, -4%, 0); }
+  40% { transform: translate3d(-2%, 5%, 0); }
+  50% { transform: translate3d(-4%, 2%, 0); }
+  60% { transform: translate3d(3%, 0, 0); }
+  70% { transform: translate3d(0, 3%, 0); }
+  80% { transform: translate3d(-3%, 0, 0); }
+  90% { transform: translate3d(2%, 2%, 0); }
 }
 
 button,

@@ -2,7 +2,7 @@
 import { openSourceProjects, profile } from '../data/portfolio'
 ---
 
-<section class="oss" id="open-source" aria-labelledby="oss-title">
+<section class="oss" id="open-source" aria-labelledby="oss-title" data-header-tone="dark" data-section-name="Open Source">
   <div class="oss__pin">
     <div class="oss__top site-shell">
       <div class="section-heading" data-reveal>
@@ -22,7 +22,7 @@ import { openSourceProjects, profile } from '../data/portfolio'
         </div>
 
         {openSourceProjects.map((project, index) => (
-          <a class="oss-card" href={project.href} target="_blank" rel="noopener noreferrer" data-cursor="Open repo">
+          <a class="oss-card" href={project.href} target="_blank" rel="noopener noreferrer" data-cursor="Open repo" data-tilt="6">
             <div class="oss-card__mesh" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
             <div class="oss-card__top">
               <span>{project.number}</span>
@@ -108,6 +108,9 @@ import { openSourceProjects, profile } from '../data/portfolio'
         font: 700 .62rem/1 font-family(fraktion);
         letter-spacing: 0.084em;
         text-decoration: none;
+        transition: background-color .4s ease, color .4s ease;
+        @include gloss-sweep(.45);
+        &:hover { background: color(white); color: color(accent); }
       }
     }
 
@@ -134,6 +137,8 @@ import { openSourceProjects, profile } from '../data/portfolio'
     color: color(secondary);
     text-decoration: none;
     transition: border-color .3s ease;
+    will-change: transform;
+    @include lift-shadow(rgba(0, 0, 0, .55));
 
     &:hover { border-color: color(accent); }
     &:hover .oss-card__mesh { transform: scale(1.08) rotate(3deg); }
