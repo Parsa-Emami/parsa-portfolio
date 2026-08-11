@@ -129,7 +129,7 @@ import { profile } from '../data/portfolio'
       width: 100%;
       margin: clamp(4rem, 9vh, 8rem) 0 clamp(3rem, 7vh, 6rem);
       font: 700 clamp(6rem, 20.5vw, 20rem)/.61 font-family(bigger);
-      letter-spacing: -.078em;
+      letter-spacing: -.015em;
       text-transform: uppercase;
     }
 
@@ -148,7 +148,14 @@ import { profile } from '../data/portfolio'
         justify-content: flex-end;
         span {
           color: transparent;
+          letter-spacing: .01em;
           -webkit-text-stroke: clamp(1px, .12vw, 2px) color(accent);
+          // `will-change` promotes this element to its own GPU compositing
+          // layer. At this font size, combining that with a stroked (not
+          // filled) glyph outline triggers a Chromium tessellation bug that
+          // corrupts the letterforms — so this word is deliberately excluded
+          // from the GPU hint above. It's still animated by GSAP just fine.
+          will-change: auto;
         }
       }
     }

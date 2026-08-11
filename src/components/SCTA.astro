@@ -78,13 +78,17 @@ import { profile } from '../data/portfolio'
       display: grid;
       margin: clamp(4rem, 9vh, 8rem) 0;
       font: 700 clamp(5.8rem, 18.5vw, 19rem)/.61 font-family(bigger);
-      letter-spacing: -.078em;
+      letter-spacing: -.015em;
       text-transform: uppercase;
       span { display: block; width: max-content; will-change: transform; }
       span:nth-child(2) { justify-self: end; }
       span:nth-child(3) { justify-self: center; }
     }
-    &__outline { color: transparent; -webkit-text-stroke: clamp(1px, .13vw, 2px) color(white); }
+    // `will-change` (set on all .cta__title spans above) promotes an element
+    // to its own GPU layer. Combined with a stroked huge glyph outline this
+    // triggers a Chromium tessellation bug that corrupts the letterforms, so
+    // this word opts back out — GSAP animates it fine without the hint.
+    &__outline { color: transparent; letter-spacing: .01em; -webkit-text-stroke: clamp(1px, .13vw, 2px) color(white); will-change: auto; }
     &__bottom {
       display: grid;
       grid-template-columns: minmax(0, .8fr) minmax(360px, 1.2fr);
