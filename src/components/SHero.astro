@@ -1,5 +1,6 @@
 ---
 import { profile } from '../data/portfolio'
+import IconGlyph from './IconGlyph.astro'
 ---
 
 <section class="hero" id="top" aria-labelledby="hero-title" data-header-tone="dark" data-section-name="Intro">
@@ -24,7 +25,7 @@ import { profile } from '../data/portfolio'
         <path d="M110 10V210M10 110H210"></path>
         <path d="M43 43L177 177M177 43L43 177"></path>
       </svg>
-      <span>PE</span>
+      <span class="hero__orbit-mark"><IconGlyph variant="orbit" /></span>
     </div>
 
     <div class="hero__bottom" data-hero-meta>
@@ -45,10 +46,12 @@ import { profile } from '../data/portfolio'
           <span>Public code</span><i>↗</i>
         </a>
       </div>
-      <div class="hero__scroll" aria-hidden="true">
-        <span>SCROLL TO DECODE</span>
-        <i></i>
-      </div>
+      <a href="#manifest" class="hero__scroll" data-nav-link data-magnetic data-cursor="Continue" aria-label="Continue to operating philosophy">
+        <span class="hero__scroll-copy"><b>00 → 01</b><em>ENTER THE SYSTEM</em></span>
+        <i class="hero__scroll-disc" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v13M7.5 13.5 12 18l4.5-4.5"></path></svg>
+        </i>
+      </a>
     </div>
   </div>
 
@@ -67,6 +70,36 @@ import { profile } from '../data/portfolio'
     overflow: hidden;
     background: color(primary);
     border-bottom: 1px solid color(shadow);
+    isolation: isolate;
+
+    &:before,
+    &:after {
+      position: absolute;
+      z-index: 1;
+      border-radius: 50%;
+      pointer-events: none;
+      content: '';
+    }
+
+    &:before {
+      top: 9%;
+      left: 44%;
+      width: min(36vw, 34rem);
+      aspect-ratio: 1;
+      background: radial-gradient(circle, color(accent, .12), transparent 67%);
+      filter: blur(2rem);
+      transform: translateX(-50%);
+    }
+
+    &:after {
+      right: -12rem;
+      bottom: 5%;
+      width: min(34vw, 30rem);
+      aspect-ratio: 1;
+      border: 1px solid color(shadow, .65);
+      box-shadow: inset 0 0 0 5rem color(shadow, .025), inset 0 0 0 10rem color(shadow, .018);
+      opacity: .7;
+    }
 
     &__field {
       position: absolute;
@@ -79,10 +112,19 @@ import { profile } from '../data/portfolio'
     &__shade {
       position: absolute;
       inset: 0;
+      z-index: 1;
       background:
-        radial-gradient(circle at 48% 42%, transparent 0, transparent 22%, color(primary, .2) 60%, color(primary, .86) 100%),
-        linear-gradient(to bottom, color(primary, .1), color(primary, .56));
+        linear-gradient(90deg, color(primary, .48), transparent 22%, transparent 78%, color(primary, .42)),
+        radial-gradient(circle at 48% 42%, transparent 0, transparent 20%, color(primary, .18) 57%, color(primary, .9) 100%),
+        linear-gradient(to bottom, color(primary, .05), color(primary, .62));
       pointer-events: none;
+    }
+
+    :global(.theme-contrasted) &__shade {
+      background:
+        linear-gradient(90deg, color(primary, .32), transparent 22%, transparent 78%, color(primary, .28)),
+        radial-gradient(circle at 48% 42%, transparent 0, transparent 20%, color(primary, .08) 58%, color(primary, .8) 100%),
+        linear-gradient(to bottom, color(primary, .01), color(primary, .42));
     }
 
     &__shell {
@@ -176,7 +218,15 @@ import { profile } from '../data/portfolio'
       svg { position: absolute; inset: 0; width: 100%; height: 100%; animation: orbit 18s linear infinite; }
       circle, path { fill: none; stroke: currentColor; stroke-width: .7; opacity: .55; }
       circle:nth-child(2) { stroke-dasharray: 3 7; opacity: .9; }
-      span { font: 700 clamp(.8rem, 1.2vw, 1.2rem)/1 font-family(fraktion); letter-spacing: -.08em; }
+      .hero__orbit-mark {
+        display: grid;
+        place-items: center;
+        width: 34%;
+        aspect-ratio: 1;
+        color: color(accent);
+        filter: drop-shadow(0 0 1rem color(accent, .28));
+      }
+      .hero__orbit-mark :global(.icon-glyph) { width: 100%; height: 100%; }
     }
 
     &__bottom {
@@ -208,11 +258,14 @@ import { profile } from '../data/portfolio'
         display: flex;
         gap: .55rem;
         align-items: baseline;
-        padding: .45rem .58rem;
+        padding: .48rem .62rem;
         border: 1px solid color(shadow);
-        background: color(primary, .34);
-        backdrop-filter: blur(8px);
+        background: color(surface, .46);
+        box-shadow: inset 0 0 0 1px color(secondary, .018);
+        backdrop-filter: blur(10px);
+        transition: transform .35s cubic-bezier(.22,1,.36,1), border-color .35s ease, background .35s ease;
       }
+      div:hover { transform: translateY(-2px); border-color: color(accent, .48); background: color(surface-raised, .62); }
       strong { color: color(accent); font: 700 .62rem/1 font-family(fraktion); }
       span { color: color(muted); font: 700 .48rem/1 font-family(fraktion); letter-spacing: .08em; text-transform: uppercase; }
     }
@@ -239,29 +292,43 @@ import { profile } from '../data/portfolio'
     }
 
     &__scroll {
+      position: relative;
       display: grid;
-      justify-items: end;
-      gap: .7rem;
-      color: color(muted);
-      font: 700 .52rem/1 font-family(fraktion);
-      letter-spacing: 0.126em;
-      writing-mode: vertical-rl;
-      span { transform: rotate(180deg); }
-      i {
-        position: relative;
-        width: 1px;
-        height: 3rem;
-        overflow: hidden;
-        background: color(shadow);
-        &:after {
-          position: absolute;
-          inset: 0;
-          background: color(accent);
-          transform: translateY(-100%);
-          animation: scrollLine 1.8s cubic-bezier(.77,0,.18,1) infinite;
-          content: '';
-        }
-      }
+      grid-template-columns: 1fr auto;
+      gap: .9rem;
+      align-items: center;
+      min-width: 10.8rem;
+      padding: .55rem .55rem .55rem .8rem;
+      border: 1px solid color(shadow);
+      border-radius: 999px;
+      background: color(surface, .56);
+      color: color(secondary);
+      text-decoration: none;
+      backdrop-filter: blur(12px);
+      transition: border-color .35s ease, background .35s ease, transform .45s cubic-bezier(.22,1,.36,1);
+      &:hover { border-color: color(accent); background: color(surface-raised, .72); }
+    }
+
+    &__scroll-copy {
+      display: grid;
+      gap: .25rem;
+      font-family: font-family(fraktion);
+      b { color: color(accent); font-size: .47rem; letter-spacing: .12em; }
+      em { color: color(muted); font-size: .49rem; font-style: normal; font-weight: 700; letter-spacing: .1em; white-space: nowrap; }
+    }
+
+    &__scroll-disc {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      overflow: hidden;
+      border-radius: 50%;
+      background: color(accent);
+      color: color(white);
+      box-shadow: 0 0 0 .28rem color(accent, .08), 0 .6rem 1.4rem -.7rem color(accent, .7);
+      svg { width: 1rem; height: 1rem; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; animation: scrollArrow 1.7s cubic-bezier(.77,0,.18,1) infinite; }
     }
 
     &__ticker {
@@ -286,6 +353,12 @@ import { profile } from '../data/portfolio'
   @keyframes orbit { to { transform: rotate(360deg); } }
   @keyframes pulse { 50% { opacity: .4; } }
   @keyframes scrollLine { 50% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+  @keyframes scrollArrow {
+    0%, 100% { transform: translateY(-1px); opacity: .82; }
+    48% { transform: translateY(4px); opacity: 1; }
+    49% { transform: translateY(-5px); opacity: 0; }
+    60% { opacity: 1; }
+  }
 
   @media (max-width: 900px) {
     .hero__shell { padding-top: 5.6rem; min-height: calc(100svh - 2.6rem); }
@@ -295,7 +368,7 @@ import { profile } from '../data/portfolio'
     .hero__orbit { top: 9.5rem; left: auto; right: 1.2rem; width: 6.5rem; transform: none; }
     .hero__bottom { grid-template-columns: 1fr; gap: 1.7rem; }
     .hero__actions { min-width: 0; grid-template-columns: 1fr 1fr; }
-    .hero__scroll { display: none; }
+    .hero__scroll { justify-self: start; min-width: 10.4rem; }
   }
 
   @media (max-width: 560px) {
@@ -304,5 +377,6 @@ import { profile } from '../data/portfolio'
     .hero__actions { grid-template-columns: 1fr; }
     .hero__orbit { width: 5.4rem; opacity: .65; }
     .hero__summary { font-size: .88rem; }
+    .hero__scroll { display: none; }
   }
 </style>

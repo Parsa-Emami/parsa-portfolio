@@ -24,11 +24,15 @@ html {
 html.theme-contrasted { color-scheme: light; }
 
 body {
+  position: relative;
   min-width: 320px;
   margin: 0;
   overflow-x: hidden;
   overscroll-behavior-y: none;
-  background: color(primary);
+  background:
+    radial-gradient(circle at 12% 8%, color(accent, .055), transparent 25rem),
+    radial-gradient(circle at 88% 32%, color(electric, .035), transparent 32rem),
+    color(primary);
   color: color(secondary);
   font-family: font-family(editorial);
   text-rendering: optimizeLegibility;
@@ -97,7 +101,35 @@ button {
   margin-inline: auto;
 }
 
-.section { padding: clamp(7rem, 12vw, 12rem) 0; }
+.section {
+  position: relative;
+  padding: clamp(7rem, 12vw, 12rem) 0;
+  isolation: isolate;
+}
+
+.section:after {
+  position: absolute;
+  right: clamp(1rem, 3vw, 3rem);
+  left: clamp(1rem, 3vw, 3rem);
+  bottom: 0;
+  height: 1px;
+  opacity: .42;
+  background: linear-gradient(90deg, transparent, color(shadow) 18%, color(shadow) 82%, transparent);
+  content: '';
+  pointer-events: none;
+}
+
+.theme-contrasted body {
+  background:
+    radial-gradient(circle at 12% 8%, color(accent, .045), transparent 25rem),
+    radial-gradient(circle at 88% 32%, color(electric, .035), transparent 32rem),
+    color(primary);
+}
+
+.theme-contrasted body:before {
+  opacity: .022;
+  mix-blend-mode: multiply;
+}
 
 .section-heading {
   display: grid;

@@ -1,12 +1,13 @@
 ---
 import { profile } from '../data/portfolio'
+import IconGlyph from './IconGlyph.astro'
 const year = new Date().getFullYear()
 ---
 
 <footer class="site-foot">
   <div class="site-shell site-foot__inner">
     <a class="site-foot__brand" href="#top" data-nav-link data-cursor="Top">
-      <span>PE</span>
+      <span class="site-foot__mark"><IconGlyph variant="footer" /></span>
       <div><strong>{profile.name}</strong><i>Software / Security / AI</i></div>
     </a>
     <div class="site-foot__meta">
@@ -42,7 +43,7 @@ const year = new Date().getFullYear()
       padding-top: 1.5rem;
       padding-bottom: 1.5rem;
     }
-    &__brand { display: flex; align-items: center; gap: .8rem; color: color(secondary); text-decoration: none; > span { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border: 1px solid color(shadow); border-radius: 50%; color: color(accent); font: 700 .68rem/1 font-family(fraktion); } div { display: grid; gap: .15rem; font-family: font-family(fraktion); } strong { font-size: .67rem; letter-spacing: 0.056em; text-transform: uppercase; } i { color: color(muted); font-size: .53rem; letter-spacing: 0.084em; text-transform: uppercase; } }
+    &__brand { display: flex; align-items: center; gap: .8rem; color: color(secondary); text-decoration: none; > .site-foot__mark { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border: 1px solid color(shadow); border-radius: .72rem; background: color(surface, .64); color: color(accent); font-size: 1.45rem; } .site-foot__mark :global(.icon-glyph) { width: 1.45rem; height: 1.45rem; } div { display: grid; gap: .15rem; font-family: font-family(fraktion); } strong { font-size: .67rem; letter-spacing: 0.056em; text-transform: uppercase; } i { color: color(muted); font-size: .53rem; letter-spacing: 0.084em; text-transform: uppercase; } }
     &__meta { display: flex; flex-wrap: wrap; justify-content: center; gap: .65rem 1.2rem; color: color(muted); font: 400 .54rem/1.35 font-family(fraktion); letter-spacing: 0.056em; text-align: center; }
     &__top { display: flex; gap: 1rem; align-items: center; color: color(secondary); font: 700 .58rem/1 font-family(fraktion); letter-spacing: 0.084em; text-decoration: none; i { color: color(accent); } }
   }

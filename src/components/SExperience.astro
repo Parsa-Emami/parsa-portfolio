@@ -106,7 +106,13 @@ import { education, experience, researchThemes } from '../data/portfolio'
     gap: 1.2rem;
     padding: 2.6rem 0 2.6rem 3.8rem;
     border-bottom: 1px solid color(shadow);
+    transition: padding-left .45s cubic-bezier(.22,1,.36,1), background .4s ease, border-color .35s ease;
     &:first-child { border-top: 1px solid color(shadow); }
+    &:hover {
+      padding-left: 4.35rem;
+      border-color: color(accent, .42);
+      background: linear-gradient(90deg, color(accent, .045), transparent 72%);
+    }
     &__node {
       position: absolute;
       top: 3rem;
@@ -129,7 +135,8 @@ import { education, experience, researchThemes } from '../data/portfolio'
   .experience-panel {
     border: 1px solid color(shadow);
     padding: clamp(1.2rem, 2vw, 2rem);
-    background: color(primary, .94);
+    background: linear-gradient(145deg, color(surface, .9), color(primary, .94));
+    box-shadow: 0 2rem 5rem -3.6rem rgba(0,0,0,.7), inset 0 0 0 1px color(secondary, .018);
     backdrop-filter: blur(16px);
     &__label { display: flex; justify-content: space-between; margin-bottom: 2rem; color: color(accent); font: 700 .57rem/1 font-family(fraktion); letter-spacing: 0.112em; i { color: color(muted); } }
     &--research { background: color(secondary); color: color(primary); .experience-panel__label i { color: color(primary, .45); } }

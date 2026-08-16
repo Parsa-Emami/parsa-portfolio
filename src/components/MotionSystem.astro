@@ -1,3 +1,7 @@
+---
+import IconGlyph from './IconGlyph.astro'
+---
+
 <svg class="motion-grain" aria-hidden="true">
   <filter id="motion-grain-filter">
     <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise" />
@@ -21,7 +25,7 @@
 
 <div class="motion-loader" data-motion-loader aria-hidden="true">
   <div class="motion-loader__top">
-    <span>PE / PORTFOLIO SYSTEM</span>
+    <span class="motion-loader__identity"><IconGlyph variant="brand" /><b>PORTFOLIO / SYSTEM</b></span>
     <span data-loader-counter>000</span>
   </div>
   <div class="motion-loader__word" data-loader-word>
@@ -163,7 +167,7 @@
       ctx.clearRect(0, 0, width, height)
 
       const style = getComputedStyle(document.documentElement)
-      const stroke = style.getPropertyValue('--color-secondary').trim() || '#f1eee8'
+      const stroke = style.getPropertyValue('--color-secondary').trim() || '#f3f0e9'
       const accent = style.getPropertyValue('--color-accent').trim() || '#ff3158'
       const cols = Math.max(18, Math.floor(width / 30))
       const rows = Math.max(11, Math.floor(height / 42))
@@ -756,6 +760,8 @@
     .motion-grain { opacity: .022; }
   }
 
+  :global(.theme-contrasted) .motion-grain { mix-blend-mode: multiply; opacity: .018; }
+
   .motion-light {
     position: fixed;
     top: 0;
@@ -783,8 +789,10 @@
     align-items: end;
     padding: .65rem .75rem;
     border: 1px solid color(shadow);
-    background: color(primary, .62);
-    backdrop-filter: blur(14px);
+    border-radius: .7rem;
+    background: color(glass, .7);
+    box-shadow: 0 1rem 3rem -2rem rgba(0,0,0,.5);
+    backdrop-filter: blur(16px) saturate(1.25);
     font-family: font-family(fraktion);
     text-transform: uppercase;
     pointer-events: none;
@@ -793,6 +801,8 @@
     &__name { color: color(secondary); font-size: .58rem; font-weight: 700; letter-spacing: .08em; }
     &__index { color: color(accent); font-size: .5rem; font-weight: 700; letter-spacing: .08em; }
   }
+
+  :global(.theme-contrasted) .motion-light { mix-blend-mode: multiply; opacity: .68; }
 
   .ambient-field {
     position: fixed;
@@ -826,6 +836,11 @@
     }
   }
 
+  :global(.theme-contrasted) .ambient-field {
+    mix-blend-mode: multiply;
+    opacity: .6;
+  }
+
   @keyframes ambient-drift-a {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
     50% { transform: translate3d(6vw, 8vh, 0) scale(1.12); }
@@ -857,9 +872,14 @@
     &__top {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font: 700 0.64rem/1 font-family(fraktion);
       letter-spacing: 0.112em;
     }
+
+    &__identity { display: inline-flex; align-items: center; gap: .65rem; }
+    &__identity :global(.icon-glyph) { width: 1.45rem; height: 1.45rem; }
+    &__identity b { font: inherit; }
 
     &__word {
       align-self: center;
@@ -964,16 +984,19 @@
     letter-spacing: 0.126em;
 
     &__label { writing-mode: vertical-rl; transform: rotate(180deg); }
+    &__value:after { margin-left: .08rem; color: color(accent); content: '%'; }
     &__rail {
       position: relative;
       width: 1px;
       height: 100%;
       background: color(shadow);
+      box-shadow: 0 0 0 1px color(primary, .22);
       i {
         position: absolute;
         inset: 0;
         display: block;
         background: color(accent);
+        box-shadow: 0 0 1rem color(accent, .45);
         transform: scaleY(0);
         transform-origin: top;
       }

@@ -1,5 +1,6 @@
 ---
 import { profile } from '../data/portfolio'
+import IconGlyph from './IconGlyph.astro'
 const menu = [
   { id: 'about', text: 'Profile', number: '01' },
   { id: 'systems', text: 'Systems', number: '02' },
@@ -11,7 +12,7 @@ const menu = [
 
 <header class="site-head" data-site-head>
   <a class="site-head__brand" href="#top" aria-label={`${profile.name} — Home`} data-nav-link data-cursor="Home" data-magnetic>
-    <span class="site-head__mark">PE</span>
+    <span class="site-head__mark"><IconGlyph variant="brand" /></span>
     <span class="site-head__name"><strong>PARSA EMAMI</strong><i>ENGINEERING / SECURITY</i></span>
   </a>
 
@@ -20,7 +21,13 @@ const menu = [
   </nav>
 
   <div class="site-head__actions">
-    <button type="button" class="site-head__theme" data-theme-toggle aria-label="Toggle color theme" data-cursor="Theme" data-magnetic>◐</button>
+    <button type="button" class="site-head__theme" data-theme-toggle aria-label="Toggle color theme" aria-pressed="false" data-cursor="Theme" data-magnetic>
+      <span class="site-head__theme-icon" aria-hidden="true">
+        <svg class="theme-symbol theme-symbol--sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.3"></circle><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.55 1.55M17.15 17.15l1.55 1.55M18.7 5.3l-1.55 1.55M6.85 17.15 5.3 18.7"></path></svg>
+        <svg class="theme-symbol theme-symbol--moon" viewBox="0 0 24 24" fill="none"><path d="M20.2 15.25A8.2 8.2 0 0 1 8.75 3.8 8.25 8.25 0 1 0 20.2 15.25Z"></path></svg>
+      </span>
+      <span class="site-head__theme-label" data-theme-label>DARK</span>
+    </button>
     <button type="button" class="site-head__menu-button" data-menu-toggle aria-expanded="false" aria-controls="site-menu" data-cursor="Menu" data-magnetic>
       <span>MENU</span><i></i><i></i>
     </button>
@@ -30,7 +37,10 @@ const menu = [
 <div class="site-menu" id="site-menu" data-site-menu aria-hidden="true">
   <div class="site-menu__backdrop" data-menu-close></div>
   <div class="site-menu__panel">
-    <div class="site-menu__top"><span>PE / NAVIGATION</span><button type="button" data-menu-close>CLOSE ×</button></div>
+    <div class="site-menu__top">
+      <span class="site-menu__identity"><IconGlyph variant="navigation" /><b>NAVIGATION</b></span>
+      <button type="button" data-menu-close>CLOSE ×</button>
+    </div>
     <nav aria-label="Expanded navigation">
       {menu.map((item) => (
         <a href={`#${item.id}`} data-nav-link data-menu-close>
@@ -51,25 +61,35 @@ const menu = [
   const toggle = document.querySelector('[data-theme-toggle]')
   const menuToggle = document.querySelector('[data-menu-toggle]')
   const menu = document.querySelector('[data-site-menu]')
-  const storedTheme = localStorage.getItem('parsa-portfolio-theme')
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   let lastScroll = window.scrollY
 
-  if (storedTheme === 'light') root.classList.add('theme-contrasted')
-  if (storedTheme === 'dark') root.classList.remove('theme-contrasted')
+  const themeLabel = document.querySelector('[data-theme-label]')
+
+  const syncThemeControl = () => {
+    const isLight = root.classList.contains('theme-contrasted')
+    if (themeLabel) themeLabel.textContent = isLight ? 'LIGHT' : 'DARK'
+    toggle?.setAttribute('aria-pressed', String(isLight))
+    toggle?.setAttribute('aria-label', `Switch to ${isLight ? 'dark' : 'light'} color theme`)
+    const themeMeta = document.querySelector('meta[name="theme-color"]')
+    themeMeta?.setAttribute('content', isLight ? '#f3efe7' : '#07080a')
+  }
 
   const applyTheme = () => {
     root.classList.toggle('theme-contrasted')
     localStorage.setItem('parsa-portfolio-theme', root.classList.contains('theme-contrasted') ? 'light' : 'dark')
+    syncThemeControl()
     window.dispatchEvent(new CustomEvent('portfolio-theme-change'))
   }
+
+  syncThemeControl()
 
   // Circular "wipe" reveal so switching between dark and light feels like an
   // event rather than an instant color swap. The outgoing theme's color is
   // held in a fixed overlay that irises open from the button, revealing the
   // new theme already applied underneath.
   const themeWipe = (originX: number, originY: number) => {
-    const oldColor = getComputedStyle(root).getPropertyValue('--color-primary').trim() || '#0b0b0d'
+    const oldColor = getComputedStyle(root).getPropertyValue('--color-primary').trim() || '#07080a'
     const maxRadius = Math.hypot(
       Math.max(originX, window.innerWidth - originX),
       Math.max(originY, window.innerHeight - originY)
@@ -112,7 +132,16 @@ const menu = [
     menu.setAttribute('aria-hidden', String(!open))
     menuToggle.setAttribute('aria-expanded', String(open))
     document.body.classList.toggle('menu-open', open)
+    if (open) {
+      requestAnimationFrame(() => menu.querySelector('button[data-menu-close]')?.focus())
+    } else if (document.activeElement && menu.contains(document.activeElement)) {
+      menuToggle.focus()
+    }
   }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && menu?.classList.contains('is-open')) setMenu(false)
+  })
 
   menuToggle?.addEventListener('click', () => setMenu(!menu?.classList.contains('is-open')))
   document.querySelectorAll('[data-menu-close]').forEach((element) => element.addEventListener('click', () => setMenu(false)))
@@ -189,21 +218,40 @@ const menu = [
 <style lang="scss">
   .site-head {
     position: fixed;
-    top: 0;
-    left: 0;
+    top: .72rem;
+    left: 50%;
     z-index: 100;
     display: grid;
     grid-template-columns: auto 1fr auto;
     gap: 2rem;
     align-items: center;
-    width: 100%;
-    min-height: 5rem;
-    padding: .8rem clamp(1rem, 2vw, 2rem);
-    border-bottom: 1px solid transparent;
+    width: calc(100% - clamp(1.25rem, 3vw, 2.8rem));
+    min-height: 4.5rem;
+    padding: .65rem clamp(.75rem, 1.45vw, 1.35rem);
+    border: 1px solid transparent;
+    border-radius: 1rem;
+    transform: translateX(-50%);
     color: color(secondary);
-    transition: transform .5s cubic-bezier(.22,1,.36,1), background .35s ease, border-color .35s ease;
+    transition: transform .5s cubic-bezier(.22,1,.36,1), background .35s ease, border-color .35s ease, box-shadow .35s ease;
 
-    &.is-scrolled { border-color: color(shadow); background: color(primary, .78); backdrop-filter: blur(18px); }
+    &:before {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      background: linear-gradient(110deg, color(surface, .6), color(primary, .22));
+      opacity: 0;
+      content: '';
+      transition: opacity .35s ease;
+    }
+
+    &.is-scrolled {
+      border-color: color(shadow);
+      background: color(glass, .76);
+      box-shadow: 0 1rem 3.5rem -2rem rgba(0,0,0,.55);
+      backdrop-filter: blur(22px) saturate(1.35);
+    }
+    &.is-scrolled:before { opacity: 1; }
     &.is-tone-light {
       color: color(primary);
       &.is-scrolled { border-color: color(primary, .16); background: color(secondary, .82); }
@@ -217,17 +265,20 @@ const menu = [
       .site-head__nav a i { color: color(white); }
       .site-head__mark, .site-head__theme, .site-head__menu-button { border-color: color(white, .42); }
     }
-    &.is-hidden { transform: translateY(-105%); }
+    &.is-hidden { transform: translate(-50%, -135%); }
     &__brand { display: flex; align-items: center; gap: .75rem; color: inherit; text-decoration: none; }
     &__mark {
       display: grid;
       place-items: center;
       width: 2.45rem;
       height: 2.45rem;
-      border: 1px solid color(secondary);
-      border-radius: 50%;
-      font: 700 .72rem/1 font-family(fraktion);
-      letter-spacing: -.07em;
+      border: 1px solid color(shadow);
+      border-radius: .72rem;
+      color: color(accent);
+      background: color(surface, .55);
+      box-shadow: inset 0 0 0 1px color(secondary, .025);
+      font-size: 1.42rem;
+      transition: transform .4s cubic-bezier(.22,1,.36,1), border-color .3s ease, background .3s ease;
     }
     &__name { display: grid; gap: .14rem; font-family: font-family(fraktion); strong { font-size: .68rem; letter-spacing: 0.056em; } i { color: color(muted); font-size: .52rem; letter-spacing: 0.112em; } }
     &__nav {
@@ -265,17 +316,49 @@ const menu = [
       }
     }
     &__actions { display: flex; gap: .45rem; align-items: center; }
-    &__theme, &__menu-button { border: 1px solid color(shadow); background: color(primary, .55); color: color(secondary); cursor: pointer; backdrop-filter: blur(10px); }
+    &__theme, &__menu-button {
+      border: 1px solid color(shadow);
+      background: color(surface, .62);
+      color: color(secondary);
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+    }
     &__theme {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      min-width: 6.35rem;
+      height: 2.4rem;
+      padding: 0 .7rem 0 .5rem;
+      border-radius: .72rem;
+      transition: transform .45s cubic-bezier(.22,1,.36,1), border-color .3s ease, background .35s ease;
+      &:hover { border-color: color(accent); transform: translateY(-2px); }
+      &:active { transform: translateY(0) scale(.97); }
+    }
+    &__theme-icon {
+      position: relative;
       display: grid;
       place-items: center;
-      width: 2.4rem;
-      height: 2.4rem;
-      border-radius: 50%;
-      transition: transform .45s cubic-bezier(.22,1,.36,1), border-color .3s ease, background .35s ease;
-      &:hover { border-color: color(accent); transform: rotate(-24deg) scale(1.06); }
-      &:active { transform: rotate(-12deg) scale(.94); }
+      width: 1.3rem;
+      height: 1.3rem;
+      color: color(accent);
     }
+    &__theme-label {
+      font: 700 .49rem/1 font-family(fraktion);
+      letter-spacing: .12em;
+    }
+    .theme-symbol {
+      position: absolute;
+      width: 1.05rem;
+      height: 1.05rem;
+      stroke: currentColor;
+      stroke-width: 1.35;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: opacity .4s ease, transform .5s cubic-bezier(.22,1,.36,1);
+    }
+    .theme-symbol--sun { opacity: 0; transform: rotate(-45deg) scale(.65); }
+    .theme-symbol--moon { opacity: 1; transform: rotate(0) scale(1); }
     &__menu-button {
       position: relative;
       display: flex;
@@ -289,6 +372,10 @@ const menu = [
       i { width: .75rem; height: 1px; background: currentColor; transition: transform .3s ease; }
     }
   }
+
+
+  :global(.theme-contrasted) .site-head .theme-symbol--sun { opacity: 1; transform: rotate(0) scale(1); }
+  :global(.theme-contrasted) .site-head .theme-symbol--moon { opacity: 0; transform: rotate(45deg) scale(.65); }
 
   .site-menu {
     position: fixed;
@@ -315,7 +402,18 @@ const menu = [
     }
     &.is-open &__backdrop { opacity: 1; }
     &.is-open &__panel { transform: translateX(0); }
-    &__top { display: flex; justify-content: space-between; padding-bottom: 1rem; border-bottom: 1px solid color(primary, .2); font: 700 .57rem/1 font-family(fraktion); letter-spacing: 0.112em; button { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; } }
+    &__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid color(primary, .2);
+      font: 700 .57rem/1 font-family(fraktion);
+      letter-spacing: 0.112em;
+      button { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+    }
+    &__identity { display: inline-flex; gap: .55rem; align-items: center; }
+    &__identity :global(.icon-glyph) { width: 1.2rem; height: 1.2rem; color: color(accent); }
     nav { align-self: center; display: grid; }
     nav a {
       display: grid;
@@ -335,7 +433,13 @@ const menu = [
 
   :global(body.menu-open) { overflow: hidden; }
   @media (max-width: 900px) { .site-head__nav { display: none; } }
-  @media (max-width: 540px) { .site-head__name { display: none; } .site-head__menu-button span { display: none; } }
+  @media (max-width: 540px) {
+    .site-head { top: .45rem; width: calc(100% - .8rem); border-radius: .85rem; }
+    .site-head__name { display: none; }
+    .site-head__menu-button span { display: none; }
+    .site-head__theme { min-width: 2.4rem; width: 2.4rem; padding: 0; justify-content: center; }
+    .site-head__theme-label { display: none; }
+  }
 
   :global(.theme-wipe) {
     position: fixed;

@@ -1,5 +1,6 @@
 ---
 import { capabilities, profile } from '../data/portfolio'
+import IconGlyph from './IconGlyph.astro'
 ---
 
 <section class="about section" id="about" aria-labelledby="about-title" data-header-tone="dark" data-section-name="Profile">
@@ -24,7 +25,7 @@ import { capabilities, profile } from '../data/portfolio'
       <div class="about__machine" data-reveal aria-hidden="true">
         <div class="about__machine-grid"></div>
         <div class="about__core" data-about-core>
-          <span>PE</span>
+          <span class="about__core-mark"><IconGlyph variant="profile" /></span>
           <i></i><i></i><i></i>
         </div>
         <span class="about__orbit-word about__orbit-word--a" data-orbit-word>BUILD</span>
@@ -109,7 +110,8 @@ import { capabilities, profile } from '../data/portfolio'
       min-height: min(52vw, 42rem);
       border: 1px solid color(shadow);
       overflow: hidden;
-      background: color(primary);
+      background: linear-gradient(145deg, color(surface, .94), color(primary));
+      box-shadow: 0 2rem 6rem -4rem rgba(0,0,0,.65), inset 0 0 0 1px color(secondary, .018);
     }
 
     &__machine-grid {
@@ -143,7 +145,15 @@ import { capabilities, profile } from '../data/portfolio'
         content: '';
       }
       &:after { inset: -62%; border-style: solid; opacity: .65; }
-      span { color: color(accent); font: 700 clamp(1rem, 2vw, 2rem)/1 font-family(fraktion); }
+      .about__core-mark {
+        display: grid;
+        place-items: center;
+        width: 42%;
+        aspect-ratio: 1;
+        color: color(accent);
+        filter: drop-shadow(0 0 1.3rem color(accent, .24));
+      }
+      .about__core-mark :global(.icon-glyph) { width: 100%; height: 100%; }
       i {
         position: absolute;
         width: .45rem;

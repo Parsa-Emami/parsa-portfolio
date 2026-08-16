@@ -91,7 +91,9 @@ import { openSourceProjects, profile } from '../data/portfolio'
       display: grid;
       grid-template-rows: auto 1fr auto;
       padding: clamp(1.5rem, 3vw, 3rem);
-      background: color(accent);
+      background:
+        radial-gradient(circle at 80% 18%, rgba(255,255,255,.18), transparent 14rem),
+        linear-gradient(145deg, color(accent), color-mix(in srgb, color(accent) 82%, #16020a));
       color: color(white);
       p { margin: 0; font: 700 .6rem/1 font-family(fraktion); letter-spacing: 0.112em; }
       strong {
@@ -133,14 +135,22 @@ import { openSourceProjects, profile } from '../data/portfolio'
     grid-template-rows: auto auto auto 1fr auto;
     padding: clamp(1.4rem, 2.7vw, 2.7rem);
     overflow: hidden;
-    background: color(primary);
+    background:
+      radial-gradient(circle at 92% 8%, color(accent, .055), transparent 15rem),
+      linear-gradient(145deg, color(surface, .94), color(primary));
     color: color(secondary);
     text-decoration: none;
-    transition: border-color .3s ease;
+    transition: border-color .35s ease, background .45s ease, box-shadow .45s ease;
     will-change: transform;
     @include lift-shadow(rgba(0, 0, 0, .55));
 
-    &:hover { border-color: color(accent); }
+    &:hover {
+      border-color: color(accent);
+      background:
+        radial-gradient(circle at 88% 10%, color(accent, .095), transparent 17rem),
+        linear-gradient(145deg, color(surface-raised), color(primary));
+      box-shadow: 0 2.2rem 6rem -3rem rgba(0,0,0,.7), inset 0 0 0 1px color(accent, .05);
+    }
     &:hover .oss-card__mesh { transform: scale(1.08) rotate(3deg); }
     &:hover .oss-card__index { color: color(accent); transform: translateY(-.08em); }
 

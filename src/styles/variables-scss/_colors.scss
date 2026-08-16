@@ -1,24 +1,33 @@
 /**
- * Portfolio color system
+ * Portfolio color system — art-directed dark/light palettes.
+ * "surface" tokens keep component depth consistent across both modes.
  */
 @use 'sass:map';
 
 $theme-colors: (
   default: (
-    primary: #0b0b0d,
-    secondary: #f1eee8,
-    shadow: #2a292e,
+    primary: #07080a,
+    secondary: #f3f0e9,
+    shadow: #292a31,
     white: #fffdf8,
-    accent: #ff3158,
+    accent: #ff365d,
     muted: #9d9892,
+    surface: #0e0f13,
+    surface-raised: #15161c,
+    glass: #111218,
+    electric: #8a7dff,
   ),
 
   contrasted: (
-    primary: #f1eee8,
-    secondary: #141215,
-    shadow: #d6cfc7,
+    primary: #f3efe7,
+    secondary: #151419,
+    shadow: #d4ccc1,
     white: #fffdf8,
-    accent: #d4163b,
-    muted: #716b66,
+    accent: #d61c46,
+    muted: #706a64,
+    surface: #fbf8f2,
+    surface-raised: #e9e2d8,
+    glass: #fffaf2,
+    electric: #5a50d8,
   ),
 );

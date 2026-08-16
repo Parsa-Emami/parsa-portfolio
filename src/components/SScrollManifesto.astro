@@ -1,4 +1,6 @@
 ---
+import IconGlyph from './IconGlyph.astro'
+
 const beats = [
   {
     number: '01',
@@ -52,7 +54,7 @@ const beats = [
         <div class="manifest__core" data-manifest-core aria-hidden="true">
           <div class="manifest__core-ring manifest__core-ring--outer"></div>
           <div class="manifest__core-ring manifest__core-ring--inner"></div>
-          <span>PE</span>
+          <span class="manifest__core-mark"><IconGlyph variant="kernel" /></span>
           <i class="manifest__core-dot manifest__core-dot--a"></i>
           <i class="manifest__core-dot manifest__core-dot--b"></i>
           <i class="manifest__core-dot manifest__core-dot--c"></i>
@@ -207,7 +209,14 @@ const beats = [
       color: color(accent);
       will-change: transform;
 
-      > span { font: 700 clamp(.8rem, 1.3vw, 1.2rem)/1 font-family(fraktion); letter-spacing: -.05em; }
+      > .manifest__core-mark {
+        display: grid;
+        place-items: center;
+        width: 34%;
+        aspect-ratio: 1;
+        filter: drop-shadow(0 0 1.2rem color(accent, .26));
+      }
+      > .manifest__core-mark :global(.icon-glyph) { width: 100%; height: 100%; }
     }
 
     &__core-ring {

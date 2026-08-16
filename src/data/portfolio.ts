@@ -1,6 +1,5 @@
 export const profile = {
   name: 'Parsa Emami',
-  initials: 'PE',
   headline: 'Software Engineer · Security Architect · Red Team',
   location: 'Babol, Mazandaran, Iran',
   company: 'Sepehr Afrooz Saba',
