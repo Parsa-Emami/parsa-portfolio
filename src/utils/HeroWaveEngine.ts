@@ -9,7 +9,7 @@ type WavePointer = {
   energy: number
   inside: boolean
 }
-
+ 
 type Ripple = {
   x: number
   y: number
