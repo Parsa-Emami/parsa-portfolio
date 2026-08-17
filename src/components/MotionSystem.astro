@@ -127,95 +127,6 @@ import IconGlyph from './IconGlyph.astro'
     })
   }
 
-  const initHeroField = () => {
-    const canvas = document.querySelector('[data-hero-field]')
-    if (!(canvas instanceof HTMLCanvasElement) || reduceMotion) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    let width = 0
-    let height = 0
-    let raf = 0
-    let active = true
-    let time = 0
-    const mouse = { x: 0, y: 0, tx: 0, ty: 0 }
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect()
-      width = rect.width
-      height = rect.height
-      canvas.width = Math.round(width * dpr)
-      canvas.height = Math.round(height * dpr)
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      mouse.x = mouse.tx = width * 0.5
-      mouse.y = mouse.ty = height * 0.5
-    }
-
-    const pointer = (event) => {
-      const rect = canvas.getBoundingClientRect()
-      mouse.tx = event.clientX - rect.left
-      mouse.ty = event.clientY - rect.top
-    }
-
-    const draw = () => {
-      if (!active) return
-      raf = requestAnimationFrame(draw)
-      time += 0.012
-      mouse.x += (mouse.tx - mouse.x) * 0.055
-      mouse.y += (mouse.ty - mouse.y) * 0.055
-      ctx.clearRect(0, 0, width, height)
-
-      const style = getComputedStyle(document.documentElement)
-      const stroke = style.getPropertyValue('--color-secondary').trim() || '#f3f0e9'
-      const accent = style.getPropertyValue('--color-accent').trim() || '#ff3158'
-      const cols = Math.max(18, Math.floor(width / 30))
-      const rows = Math.max(11, Math.floor(height / 42))
-      const gapX = width / (cols - 1)
-      const gapY = height / (rows - 1)
-
-      ctx.lineWidth = 0.75
-      ctx.globalAlpha = 0.18
-      ctx.strokeStyle = stroke
-
-      for (let c = 0; c < cols; c++) {
-        ctx.beginPath()
-        for (let r = 0; r < rows; r++) {
-          const bx = c * gapX
-          const by = r * gapY
-          const dx = bx - mouse.x
-          const dy = by - mouse.y
-          const dist = Math.max(1, Math.hypot(dx, dy))
-          const force = Math.max(0, 1 - dist / 260)
-          const nx = bx + Math.sin(time * 1.35 + r * 0.48 + c * 0.12) * 14 + (dx / dist) * force * 38
-          const ny = by + Math.cos(time + c * 0.28 + r * 0.2) * 8 + (dy / dist) * force * 26
-          if (r === 0) ctx.moveTo(nx, ny)
-          else ctx.lineTo(nx, ny)
-        }
-        ctx.stroke()
-      }
-
-      ctx.globalAlpha = 0.82
-      ctx.fillStyle = accent
-      ctx.beginPath()
-      ctx.arc(mouse.x, mouse.y, 2.4, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.globalAlpha = 1
-    }
-
-    const observer = new IntersectionObserver(([entry]) => {
-      active = entry.isIntersecting
-      cancelAnimationFrame(raf)
-      if (active) draw()
-    }, { threshold: 0.01 })
-
-    resize()
-    window.addEventListener('resize', resize)
-    window.addEventListener('pointermove', pointer, { passive: true })
-    observer.observe(canvas)
-    draw()
-  }
-
   const initCursor = () => {
     if (coarsePointer || reduceMotion) return
     const cursor = document.querySelector('[data-motion-cursor]')
@@ -701,7 +612,6 @@ import IconGlyph from './IconGlyph.astro'
 
   const init = async () => {
     bootSmoothScroll()
-    initHeroField()
     initCursor()
     initPointerLight()
     initProgress()

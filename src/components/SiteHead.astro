@@ -26,7 +26,7 @@ const menu = [
         <svg class="theme-symbol theme-symbol--sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.3"></circle><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.55 1.55M17.15 17.15l1.55 1.55M18.7 5.3l-1.55 1.55M6.85 17.15 5.3 18.7"></path></svg>
         <svg class="theme-symbol theme-symbol--moon" viewBox="0 0 24 24" fill="none"><path d="M20.2 15.25A8.2 8.2 0 0 1 8.75 3.8 8.25 8.25 0 1 0 20.2 15.25Z"></path></svg>
       </span>
-      <span class="site-head__theme-label" data-theme-label>DARK</span>
+      <span class="site-head__theme-label" data-theme-label>LIGHT</span>
     </button>
     <button type="button" class="site-head__menu-button" data-menu-toggle aria-expanded="false" aria-controls="site-menu" data-cursor="Menu" data-magnetic>
       <span>MENU</span><i></i><i></i>
@@ -68,9 +68,10 @@ const menu = [
 
   const syncThemeControl = () => {
     const isLight = root.classList.contains('theme-contrasted')
-    if (themeLabel) themeLabel.textContent = isLight ? 'LIGHT' : 'DARK'
+    if (themeLabel) themeLabel.textContent = isLight ? 'DARK' : 'LIGHT'
     toggle?.setAttribute('aria-pressed', String(isLight))
     toggle?.setAttribute('aria-label', `Switch to ${isLight ? 'dark' : 'light'} color theme`)
+    toggle?.setAttribute('title', `Switch to ${isLight ? 'Dark' : 'Light'} mode`)
     const themeMeta = document.querySelector('meta[name="theme-color"]')
     themeMeta?.setAttribute('content', isLight ? '#f3efe7' : '#07080a')
   }
@@ -357,8 +358,8 @@ const menu = [
       stroke-linejoin: round;
       transition: opacity .4s ease, transform .5s cubic-bezier(.22,1,.36,1);
     }
-    .theme-symbol--sun { opacity: 0; transform: rotate(-45deg) scale(.65); }
-    .theme-symbol--moon { opacity: 1; transform: rotate(0) scale(1); }
+    .theme-symbol--sun { opacity: 1; transform: rotate(0) scale(1); }
+    .theme-symbol--moon { opacity: 0; transform: rotate(45deg) scale(.65); }
     &__menu-button {
       position: relative;
       display: flex;
@@ -374,8 +375,8 @@ const menu = [
   }
 
 
-  :global(.theme-contrasted) .site-head .theme-symbol--sun { opacity: 1; transform: rotate(0) scale(1); }
-  :global(.theme-contrasted) .site-head .theme-symbol--moon { opacity: 0; transform: rotate(45deg) scale(.65); }
+  :global(.theme-contrasted) .site-head .theme-symbol--sun { opacity: 0; transform: rotate(-45deg) scale(.65); }
+  :global(.theme-contrasted) .site-head .theme-symbol--moon { opacity: 1; transform: rotate(0) scale(1); }
 
   .site-menu {
     position: fixed;

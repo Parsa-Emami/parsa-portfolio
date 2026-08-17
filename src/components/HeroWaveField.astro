@@ -1,0 +1,119 @@
+---
+const { class: className } = Astro.props
+---
+
+<div class:list={['hero-wave', className]} data-hero-wave aria-hidden="true">
+  <canvas class="hero-wave__canvas"></canvas>
+  <div class="hero-wave__focus"></div>
+  <div class="hero-wave__vignette"></div>
+</div>
+
+<script>
+  import { HeroWaveEngine } from '../utils/HeroWaveEngine'
+
+  const mountHeroWaves = () => {
+    document.querySelectorAll<HTMLElement>('[data-hero-wave]').forEach((host) => {
+      if (host.dataset.waveMounted === 'true') return
+      host.dataset.waveMounted = 'true'
+
+      try {
+        const engine = new HeroWaveEngine(host)
+        ;(host as HTMLElement & { waveEngine?: HeroWaveEngine }).waveEngine = engine
+      } catch {
+        host.classList.add('is-fallback')
+      }
+    })
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountHeroWaves, { once: true })
+  } else {
+    mountHeroWaves()
+  }
+</script>
+
+<style lang="scss">
+  .hero-wave {
+    --wave-x: 52%;
+    --wave-y: 44%;
+    --wave-energy: 0;
+
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    contain: layout paint style;
+
+    &__canvas,
+    &__focus,
+    &__vignette {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    &__canvas {
+      display: block;
+      opacity: .92;
+      transform: translateZ(0);
+    }
+
+    &__focus {
+      background:
+        radial-gradient(
+          circle at var(--wave-x) var(--wave-y),
+          color(accent, .13) 0,
+          color(accent, .06) 13%,
+          transparent 34%
+        );
+      opacity: calc(.65 + var(--wave-energy));
+      mix-blend-mode: screen;
+      transition: opacity .25s ease;
+    }
+
+    &__vignette {
+      background:
+        linear-gradient(90deg, color(primary, .55), transparent 14%, transparent 86%, color(primary, .55)),
+        linear-gradient(180deg, color(primary, .18), transparent 26%, transparent 70%, color(primary, .52));
+    }
+
+    &.is-fallback {
+      background:
+        repeating-linear-gradient(90deg, color(secondary, .11) 0 1px, transparent 1px 24px),
+        radial-gradient(circle at 52% 44%, color(accent, .1), transparent 34%);
+    }
+  }
+
+  :global(.theme-contrasted) .hero-wave__focus {
+    mix-blend-mode: multiply;
+    opacity: calc(.38 + var(--wave-energy));
+  }
+
+  :global(.theme-contrasted) .hero-wave__vignette {
+    background:
+      linear-gradient(90deg, color(primary, .4), transparent 14%, transparent 86%, color(primary, .4)),
+      linear-gradient(180deg, color(primary, .08), transparent 26%, transparent 70%, color(primary, .38));
+  }
+
+  @media (max-width: 900px) {
+    .hero-wave__canvas { opacity: .82; }
+    .hero-wave__focus {
+      background: radial-gradient(circle at var(--wave-x) var(--wave-y), color(accent, .11), transparent 38%);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .hero-wave__canvas { opacity: .76; }
+    .hero-wave__vignette {
+      background:
+        linear-gradient(90deg, color(primary, .42), transparent 18%, transparent 82%, color(primary, .42)),
+        linear-gradient(180deg, color(primary, .1), transparent 30%, transparent 68%, color(primary, .48));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-wave__focus { transition: none; }
+  }
+</style>
