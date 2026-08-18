@@ -3,13 +3,19 @@ type WavePointer = {
   y: number
   tx: number
   ty: number
-  lastX: number
-  lastY: number
+  vx: number
+  vy: number
+  inputVX: number
+  inputVY: number
+  rawX: number
+  rawY: number
+  lastInputAt: number
   speed: number
   energy: number
   inside: boolean
+  touching: boolean
 }
- 
+
 type Ripple = {
   x: number
   y: number
@@ -30,22 +36,28 @@ const smoothstep = (value: number) => {
   return t * t * (3 - 2 * t)
 }
 
+const expSmoothing = (speed: number, dt: number) => 1 - Math.exp(-speed * dt)
+
 /**
- * Adaptive 2D wave field for the portfolio hero.
+ * A lightweight spring-mesh wave field for the portfolio hero.
  *
- * Design goals:
- * - No WebGL dependency, so the effect remains dependable on Safari/iOS and
- *   browsers with conservative GPU settings.
- * - Pointer velocity changes both wave radius and force, giving fast gestures
- *   a different character from slow hovering.
- * - Work is suspended when the hero is off screen / tab is hidden.
- * - Density, DPR and frame budget scale down on coarse-pointer devices.
+ * The visible lines are backed by a real displacement field. Pointer energy
+ * enters the mesh locally, travels through neighbouring nodes and decays with
+ * damping, so the response feels closer to a soft membrane / water surface
+ * than a collection of lines simply following the cursor.
+ *
+ * The engine intentionally stays on Canvas 2D. It gives us dependable Safari
+ * and iOS behaviour without WebGL context-loss edge cases, while the adaptive
+ * mesh keeps the desktop effect rich and mobile rendering inexpensive.
  */
 export class HeroWaveEngine {
   host: HTMLElement
   canvas: HTMLCanvasElement
   ctx: CanvasRenderingContext2D
   hero: HTMLElement
+  focus: HTMLElement | null
+  focusHalfWidth = 0
+  focusHalfHeight = 0
 
   width = 1
   height = 1
@@ -62,11 +74,17 @@ export class HeroWaveEngine {
     y: 0,
     tx: 0,
     ty: 0,
-    lastX: 0,
-    lastY: 0,
+    vx: 0,
+    vy: 0,
+    inputVX: 0,
+    inputVY: 0,
+    rawX: 0,
+    rawY: 0,
+    lastInputAt: 0,
     speed: 0,
     energy: 0,
     inside: false,
+    touching: false,
   }
 
   ripples: Ripple[] = []
@@ -76,10 +94,21 @@ export class HeroWaveEngine {
   coarsePointer: MediaQueryList
   resizeObserver?: ResizeObserver
   intersectionObserver?: IntersectionObserver
+
   frameBudget = 1000 / 60
-  lineCount = 48
-  pointCount = 25
+  lineCount = 58
+  pointCount = 29
   startTime = performance.now()
+
+  // Physical displacement mesh. Values are CSS pixels and pixels/second.
+  displacementX = new Float32Array(0)
+  displacementY = new Float32Array(0)
+  velocityX = new Float32Array(0)
+  velocityY = new Float32Array(0)
+  accelerationX = new Float32Array(0)
+  accelerationY = new Float32Array(0)
+  pathX = new Float32Array(0)
+  pathY = new Float32Array(0)
 
   constructor(host: HTMLElement) {
     const canvas = host.querySelector('canvas')
@@ -95,6 +124,7 @@ export class HeroWaveEngine {
     this.canvas = canvas
     this.hero = hero
     this.ctx = ctx
+    this.focus = host.querySelector<HTMLElement>('.hero-wave__focus')
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
     this.coarsePointer = window.matchMedia('(pointer: coarse)')
 
@@ -103,11 +133,8 @@ export class HeroWaveEngine {
     this.resize()
     this.bind()
 
-    if (this.reduceMotion.matches) {
-      this.render(performance.now(), true)
-    } else {
-      this.start()
-    }
+    if (this.reduceMotion.matches) this.render(performance.now(), 1 / 60, true)
+    else this.start()
   }
 
   bind() {
@@ -131,6 +158,8 @@ export class HeroWaveEngine {
 
     window.addEventListener('pointermove', this.onPointerMove, { passive: true })
     window.addEventListener('pointerdown', this.onPointerDown, { passive: true })
+    window.addEventListener('pointerup', this.onPointerUp, { passive: true })
+    window.addEventListener('pointercancel', this.onPointerUp, { passive: true })
     window.addEventListener('blur', this.onPointerLeave)
     document.addEventListener('visibilitychange', this.onVisibilityChange, { passive: true })
     window.addEventListener('portfolio-theme-change', this.onThemeChange)
@@ -145,7 +174,7 @@ export class HeroWaveEngine {
 
   onThemeChange = () => {
     this.updatePalette()
-    if (this.reduceMotion.matches) this.render(performance.now(), true)
+    if (this.reduceMotion.matches) this.render(performance.now(), 1 / 60, true)
   }
 
   onVisibilityChange = () => {
@@ -156,7 +185,8 @@ export class HeroWaveEngine {
   onMotionPreference = () => {
     if (this.reduceMotion.matches) {
       this.stop()
-      this.render(performance.now(), true)
+      this.resetMesh()
+      this.render(performance.now(), 1 / 60, true)
     } else {
       this.start()
     }
@@ -169,67 +199,99 @@ export class HeroWaveEngine {
 
   onPointerLeave = () => {
     this.pointer.inside = false
-    this.pointer.tx = this.width * 0.5
-    this.pointer.ty = this.height * 0.46
+    this.pointer.touching = false
+  }
+
+  onPointerUp = (event: PointerEvent) => {
+    if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+      this.pointer.touching = false
+      this.pointer.inside = false
+    }
   }
 
   onPointerMove = (event: PointerEvent) => {
-    const rect = this.hero.getBoundingClientRect()
-    const inside =
-      event.clientX >= rect.left &&
-      event.clientX <= rect.right &&
-      event.clientY >= rect.top &&
-      event.clientY <= rect.bottom
-
-    this.pointer.inside = inside
-    if (!inside) return
-
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
-    const travel = Math.hypot(x - this.pointer.lastX, y - this.pointer.lastY)
-
-    this.pointer.tx = x
-    this.pointer.ty = y
-    this.pointer.speed = lerp(this.pointer.speed, clamp(travel * 5.5, 0, 220), 0.3)
-    this.pointer.lastX = x
-    this.pointer.lastY = y
-    this.pointer.energy = clamp(this.pointer.energy + Math.min(0.45, travel / 220), 0, 1)
+    // Touch pointermove is useful only while the finger/stylus is actually in
+    // contact. This avoids fighting the page's natural inertial scrolling.
+    if ((event.pointerType === 'touch' || event.pointerType === 'pen') && !this.pointer.touching) return
+    this.capturePointer(event)
   }
 
   onPointerDown = (event: PointerEvent) => {
+    const point = this.localPoint(event)
+    if (!point) return
+
+    this.pointer.touching = event.pointerType === 'touch' || event.pointerType === 'pen'
+    this.capturePointer(event, true)
+
+    const strength = event.pointerType === 'touch' ? 0.72 : event.pointerType === 'pen' ? 0.84 : 1
+    this.ripples.push({ x: point.x, y: point.y, born: performance.now(), strength })
+    if (this.ripples.length > 5) this.ripples.shift()
+    this.pointer.energy = clamp(this.pointer.energy + 0.46 * strength, 0, 1)
+    this.injectImpulse(point.x, point.y, 0, 0, 1650 * strength)
+  }
+
+  localPoint(event: PointerEvent) {
     const rect = this.hero.getBoundingClientRect()
     if (
       event.clientX < rect.left ||
       event.clientX > rect.right ||
       event.clientY < rect.top ||
       event.clientY > rect.bottom
-    ) return
+    ) return null
 
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
-    this.ripples.push({ x, y, born: performance.now(), strength: event.pointerType === 'touch' ? 0.75 : 1 })
-    this.pointer.energy = 1
-    this.pointer.tx = x
-    this.pointer.ty = y
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top }
+  }
+
+  capturePointer(event: PointerEvent, force = false) {
+    const point = this.localPoint(event)
+    this.pointer.inside = !!point
+    if (!point) return
+
+    const now = performance.now()
+    const hadPreviousInput = this.pointer.lastInputAt > 0
+    const inputDt = hadPreviousInput ? Math.max(8, now - this.pointer.lastInputAt) / 1000 : 1 / 60
+    const rawVX = hadPreviousInput ? (point.x - this.pointer.rawX) / inputDt : 0
+    const rawVY = hadPreviousInput ? (point.y - this.pointer.rawY) / inputDt : 0
+    const rawSpeed = Math.hypot(rawVX, rawVY)
+
+    this.pointer.tx = point.x
+    this.pointer.ty = point.y
+    this.pointer.rawX = point.x
+    this.pointer.rawY = point.y
+    this.pointer.lastInputAt = now
+
+    // Input velocity is intentionally filtered before it reaches the mesh.
+    // Mouse sensors often deliver tiny high-frequency position jitter; feeding
+    // that into the physical system is what usually makes cursor waves twitchy.
+    const inputBlend = force ? 0.58 : 0.3
+    this.pointer.inputVX = lerp(this.pointer.inputVX, clamp(rawVX, -1900, 1900), inputBlend)
+    this.pointer.inputVY = lerp(this.pointer.inputVY, clamp(rawVY, -1900, 1900), inputBlend)
+    this.pointer.speed = lerp(this.pointer.speed, clamp(rawSpeed, 0, 1900), 0.22)
+
+    const motionEnergy = clamp(rawSpeed / 1050, 0, 1)
+    this.pointer.energy = clamp(this.pointer.energy + motionEnergy * 0.13 + (force ? 0.12 : 0), 0, 1)
   }
 
   updateQuality() {
     const coarse = this.coarsePointer.matches
     const cores = navigator.hardwareConcurrency || 4
     const constrained = cores <= 4
+    const narrow = window.innerWidth < 720
 
     if (coarse) {
-      this.frameBudget = 1000 / 32
-      this.lineCount = constrained ? 24 : 30
-      this.pointCount = 19
+      // Keep rAF fluid on phones and save work by reducing geometry instead of
+      // visibly stepping the animation down to ~30fps.
+      this.frameBudget = 1000 / (constrained ? 50 : 60)
+      this.lineCount = narrow ? (constrained ? 25 : 29) : (constrained ? 29 : 34)
+      this.pointCount = narrow ? 21 : 23
     } else if (window.innerWidth < 980 || constrained) {
-      this.frameBudget = 1000 / 48
-      this.lineCount = 40
-      this.pointCount = 23
+      this.frameBudget = 1000 / 60
+      this.lineCount = constrained ? 42 : 48
+      this.pointCount = 25
     } else {
       this.frameBudget = 1000 / 60
-      this.lineCount = 58
-      this.pointCount = 27
+      this.lineCount = 64
+      this.pointCount = 31
     }
   }
 
@@ -249,7 +311,7 @@ export class HeroWaveEngine {
     this.height = Math.max(1, rect.height)
 
     const coarse = this.coarsePointer.matches
-    const maxDpr = coarse ? 1.2 : 1.55
+    const maxDpr = coarse ? 1.35 : 1.7
     this.dpr = Math.min(window.devicePixelRatio || 1, maxDpr)
 
     this.canvas.width = Math.max(1, Math.round(this.width * this.dpr))
@@ -258,14 +320,44 @@ export class HeroWaveEngine {
     this.canvas.style.height = `${this.height}px`
     this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0)
 
-    if (!this.pointer.x && !this.pointer.y) {
-      this.pointer.x = this.pointer.tx = this.width * 0.52
-      this.pointer.y = this.pointer.ty = this.height * 0.44
-      this.pointer.lastX = this.pointer.x
-      this.pointer.lastY = this.pointer.y
+    if (this.focus) {
+      this.focusHalfWidth = this.focus.offsetWidth * 0.5
+      this.focusHalfHeight = this.focus.offsetHeight * 0.5
     }
 
-    if (this.reduceMotion.matches) this.render(performance.now(), true)
+    const initialX = this.width * 0.52
+    const initialY = this.height * 0.44
+    if (!this.pointer.lastInputAt) {
+      this.pointer.x = this.pointer.tx = this.pointer.rawX = initialX
+      this.pointer.y = this.pointer.ty = this.pointer.rawY = initialY
+    } else {
+      this.pointer.x = clamp(this.pointer.x, 0, this.width)
+      this.pointer.y = clamp(this.pointer.y, 0, this.height)
+      this.pointer.tx = clamp(this.pointer.tx, 0, this.width)
+      this.pointer.ty = clamp(this.pointer.ty, 0, this.height)
+    }
+
+    this.allocateMesh()
+    if (this.reduceMotion.matches) this.render(performance.now(), 1 / 60, true)
+  }
+
+  allocateMesh() {
+    const size = this.lineCount * this.pointCount
+    this.displacementX = new Float32Array(size)
+    this.displacementY = new Float32Array(size)
+    this.velocityX = new Float32Array(size)
+    this.velocityY = new Float32Array(size)
+    this.accelerationX = new Float32Array(size)
+    this.accelerationY = new Float32Array(size)
+    this.pathX = new Float32Array(this.pointCount)
+    this.pathY = new Float32Array(this.pointCount)
+  }
+
+  resetMesh() {
+    this.displacementX.fill(0)
+    this.displacementY.fill(0)
+    this.velocityX.fill(0)
+    this.velocityY.fill(0)
   }
 
   start() {
@@ -289,158 +381,361 @@ export class HeroWaveEngine {
     if (!this.running || this.destroyed) return
     this.raf = requestAnimationFrame(this.tick)
     if (now - this.lastFrame < this.frameBudget) return
+
+    const elapsed = this.lastFrame ? now - this.lastFrame : this.frameBudget
     this.lastFrame = now
-    this.render(now, false)
+    const dt = clamp(elapsed / 1000, 1 / 120, 1 / 30)
+    this.render(now, dt, false)
   }
 
-  render(now: number, staticFrame: boolean) {
+  render(now: number, dt: number, staticFrame: boolean) {
     const ctx = this.ctx
     const time = staticFrame ? 0.8 : (now - this.startTime) * 0.001
 
     if (!staticFrame) {
-      const follow = this.coarsePointer.matches ? 0.09 : 0.075
-      this.pointer.x = lerp(this.pointer.x, this.pointer.tx, follow)
-      this.pointer.y = lerp(this.pointer.y, this.pointer.ty, follow)
-      this.pointer.speed *= 0.9
-      this.pointer.energy *= 0.945
-
-      if (!this.pointer.inside) {
-        const driftX = this.width * (0.5 + Math.sin(time * 0.32) * 0.075)
-        const driftY = this.height * (0.45 + Math.cos(time * 0.26) * 0.06)
-        this.pointer.tx = lerp(this.pointer.tx, driftX, 0.012)
-        this.pointer.ty = lerp(this.pointer.ty, driftY, 0.012)
-      }
+      this.updatePointer(time, dt)
+      this.simulateMesh(now, time, dt)
     }
 
     const px = this.pointer.x
     const py = this.pointer.y
-    const xPercent = clamp((px / this.width) * 100, 0, 100)
-    const yPercent = clamp((py / this.height) * 100, 0, 100)
-    this.host.style.setProperty('--wave-x', `${xPercent.toFixed(2)}%`)
-    this.host.style.setProperty('--wave-y', `${yPercent.toFixed(2)}%`)
-    this.host.style.setProperty('--wave-energy', (this.pointer.energy * 0.22).toFixed(3))
+    if (this.focus) {
+      // Transform-only cursor halo: the gradient is rasterised once and moved
+      // by the compositor instead of repainting a full-screen radial gradient.
+      const fx = px - this.focusHalfWidth
+      const fy = py - this.focusHalfHeight
+      this.focus.style.transform = `translate3d(${fx.toFixed(2)}px, ${fy.toFixed(2)}px, 0)`
+      this.focus.style.opacity = (0.54 + this.pointer.energy * 0.16).toFixed(3)
+    }
 
     ctx.clearRect(0, 0, this.width, this.height)
+    this.drawMesh(time, staticFrame)
+    this.drawRipples(now)
+  }
 
-    // Accent atmosphere follows the pointer but stays subtle enough to keep
-    // the large hero typography readable.
-    const auraRadius = Math.max(180, Math.min(this.width, this.height) * 0.34)
-    const aura = ctx.createRadialGradient(px, py, 0, px, py, auraRadius)
-    aura.addColorStop(0, this.palette.accent)
-    aura.addColorStop(1, 'transparent')
-    ctx.save()
-    ctx.globalAlpha = staticFrame ? 0.045 : 0.055 + this.pointer.energy * 0.035
-    ctx.fillStyle = aura
-    ctx.fillRect(0, 0, this.width, this.height)
-    ctx.restore()
+  updatePointer(time: number, dt: number) {
+    if (!this.pointer.inside && !this.pointer.touching) {
+      // Slow autonomous breathing keeps the hero alive when idle. The target
+      // itself moves slowly; the spring below handles all interpolation.
+      const driftX = this.width * (0.5 + Math.sin(time * 0.29) * 0.067 + Math.sin(time * 0.11) * 0.018)
+      const driftY = this.height * (0.45 + Math.cos(time * 0.24) * 0.052)
+      this.pointer.tx = lerp(this.pointer.tx, driftX, expSmoothing(0.55, dt))
+      this.pointer.ty = lerp(this.pointer.ty, driftY, expSmoothing(0.55, dt))
+    }
 
-    const overscan = Math.max(80, this.width * 0.055)
+    // Critically damped-ish spring follower. Unlike a fixed lerp, this keeps
+    // motion time-correct across 50/60/120Hz displays and gives the cursor a
+    // natural, soft amount of inertia instead of a robotic delay.
+    const coarse = this.coarsePointer.matches
+    const spring = coarse ? 39 : 46
+    const damping = coarse ? 12.8 : 13.6
+    const ax = (this.pointer.tx - this.pointer.x) * spring - this.pointer.vx * damping
+    const ay = (this.pointer.ty - this.pointer.y) * spring - this.pointer.vy * damping
+
+    this.pointer.vx += ax * dt
+    this.pointer.vy += ay * dt
+    this.pointer.x += this.pointer.vx * dt
+    this.pointer.y += this.pointer.vy * dt
+
+    // Velocity reported by raw input can briefly be much higher than the
+    // spring follower. Blend toward physical velocity so fast flicks still
+    // produce energy without making the visual focus jump.
+    const physicalSpeed = Math.hypot(this.pointer.vx, this.pointer.vy)
+    const inputSpeed = Math.hypot(this.pointer.inputVX, this.pointer.inputVY)
+    this.pointer.speed = lerp(this.pointer.speed, Math.max(physicalSpeed, inputSpeed * 0.72), expSmoothing(5.4, dt))
+    const inputDecay = Math.exp(-4.4 * dt)
+    this.pointer.inputVX *= inputDecay
+    this.pointer.inputVY *= inputDecay
+    this.pointer.energy *= Math.exp(-1.55 * dt)
+  }
+
+  simulateMesh(now: number, time: number, dt: number) {
+    const cols = this.lineCount
+    const rows = this.pointCount
+    const total = cols * rows
+    if (!total) return
+
+    const overscan = Math.max(70, this.width * 0.05)
     const left = -overscan
     const usableWidth = this.width + overscan * 2
-    const lineGap = usableWidth / Math.max(1, this.lineCount - 1)
-    const pointGap = this.height / Math.max(1, this.pointCount - 1)
-    const maxRadius = Math.max(180, Math.min(430, this.width * 0.34))
-    const radius = clamp(230 + this.pointer.speed * 0.75, 180, maxRadius)
-    const force = 46 + this.pointer.energy * 46 + Math.min(34, this.pointer.speed * 0.12)
+    const colGap = usableWidth / Math.max(1, cols - 1)
+    const rowGap = this.height / Math.max(1, rows - 1)
 
-    for (let lineIndex = 0; lineIndex < this.lineCount; lineIndex++) {
-      const baseX = left + lineIndex * lineGap
-      const phase = lineIndex * 0.21
-      const points: { x: number; y: number }[] = []
+    const px = this.pointer.x
+    const py = this.pointer.y
+    const speed01 = clamp(this.pointer.speed / 1200, 0, 1)
+    const radius = clamp(Math.min(this.width, this.height) * (0.25 + speed01 * 0.075), 150, 320)
+    const pointerForce = 1850 + this.pointer.energy * 2350 + speed01 * 900
+    const dragForce = 0.52 + speed01 * 0.38
 
-      for (let pointIndex = 0; pointIndex < this.pointCount; pointIndex++) {
-        const baseY = pointIndex * pointGap
-        const normalizedY = pointIndex / Math.max(1, this.pointCount - 1)
+    const coupling = 62
+    const restoring = 11.8
+    const damping = 5.5
+    const maxOffset = Math.min(92, this.width * 0.095)
 
-        const ambientX =
-          Math.sin(normalizedY * 9.2 + time * 0.72 + phase) * (11 + Math.sin(phase * 0.7) * 3) +
-          Math.cos(normalizedY * 4.4 - time * 0.44 + phase * 1.6) * 5
-        const ambientY = Math.sin(normalizedY * 6.5 + time * 0.4 + phase) * 3.5
+    // Calculate all accelerations from the same previous state before any node
+    // is integrated. This is what makes propagation stable and symmetrical.
+    for (let col = 0; col < cols; col++) {
+      for (let row = 0; row < rows; row++) {
+        const index = col * rows + row
+        const dx0 = this.displacementX[index]
+        const dy0 = this.displacementY[index]
 
-        const dx = baseX + ambientX - px
-        const dy = baseY + ambientY - py
+        let neighborX = 0
+        let neighborY = 0
+        let neighbors = 0
+
+        if (col > 0) {
+          const i = (col - 1) * rows + row
+          neighborX += this.displacementX[i]
+          neighborY += this.displacementY[i]
+          neighbors++
+        }
+        if (col < cols - 1) {
+          const i = (col + 1) * rows + row
+          neighborX += this.displacementX[i]
+          neighborY += this.displacementY[i]
+          neighbors++
+        }
+        if (row > 0) {
+          const i = col * rows + row - 1
+          neighborX += this.displacementX[i]
+          neighborY += this.displacementY[i]
+          neighbors++
+        }
+        if (row < rows - 1) {
+          const i = col * rows + row + 1
+          neighborX += this.displacementX[i]
+          neighborY += this.displacementY[i]
+          neighbors++
+        }
+
+        const lapX = neighbors ? neighborX / neighbors - dx0 : 0
+        const lapY = neighbors ? neighborY / neighbors - dy0 : 0
+
+        const baseX = left + col * colGap
+        const baseY = row * rowGap
+        const worldX = baseX + dx0
+        const worldY = baseY + dy0
+        const toX = worldX - px
+        const toY = worldY - py
+        const distance = Math.max(0.001, Math.hypot(toX, toY))
+        const influence = smoothstep(1 - distance / radius)
+        const softInfluence = influence * influence
+        const nx = toX / distance
+        const ny = toY / distance
+
+        // Directional drag creates the beautiful trailing fold behind the
+        // cursor; radial pressure prevents it from looking like a rigid magnet.
+        const dragVX = this.pointer.vx * 0.48 + this.pointer.inputVX * 0.52
+        const dragVY = this.pointer.vy * 0.48 + this.pointer.inputVY * 0.52
+        const directionalX = dragVX * dragForce * influence
+        const directionalY = dragVY * dragForce * influence * 0.42
+        const radialX = nx * pointerForce * softInfluence
+        const radialY = ny * pointerForce * softInfluence * 0.32
+
+        // Tiny coherent breathing force. It is intentionally far below cursor
+        // force and exists only to stop idle lines from appearing computer-flat.
+        const edgeFadeY = Math.sin((row / Math.max(1, rows - 1)) * Math.PI)
+        const ambient = Math.sin(time * 0.74 + row * 0.41 + col * 0.19) * 4.8 * edgeFadeY
+
+        this.accelerationX[index] =
+          lapX * coupling -
+          dx0 * restoring -
+          this.velocityX[index] * damping +
+          radialX +
+          directionalX +
+          ambient
+
+        this.accelerationY[index] =
+          lapY * coupling -
+          dy0 * (restoring * 1.15) -
+          this.velocityY[index] * (damping * 1.05) +
+          radialY +
+          directionalY
+      }
+    }
+
+    // Click/tap rings feed a soft travelling impulse into the same mesh, so
+    // the visible ring and the line deformation agree spatially.
+    for (const ripple of this.ripples) {
+      const age = (now - ripple.born) / 1000
+      const life = 1 - age / 1.3
+      if (life <= 0) continue
+      const ringRadius = age * 315
+
+      for (let col = 0; col < cols; col++) {
+        for (let row = 0; row < rows; row++) {
+          const index = col * rows + row
+          const baseX = left + col * colGap
+          const baseY = row * rowGap
+          const rx = baseX - ripple.x
+          const ry = baseY - ripple.y
+          const distance = Math.max(0.001, Math.hypot(rx, ry))
+          const band = Math.exp(-Math.pow((distance - ringRadius) / 56, 2))
+          const impulse = band * life * 950 * ripple.strength
+          this.accelerationX[index] += (rx / distance) * impulse
+          this.accelerationY[index] += (ry / distance) * impulse * 0.34
+        }
+      }
+    }
+
+    for (let index = 0; index < total; index++) {
+      this.velocityX[index] += this.accelerationX[index] * dt
+      this.velocityY[index] += this.accelerationY[index] * dt
+
+      // Very small integration drag deals with long-tab-resume and unusual
+      // frame pacing without visibly overdamping normal motion.
+      const integrationDrag = Math.exp(-0.55 * dt)
+      this.velocityX[index] *= integrationDrag
+      this.velocityY[index] *= integrationDrag
+
+      this.displacementX[index] = clamp(this.displacementX[index] + this.velocityX[index] * dt, -maxOffset, maxOffset)
+      this.displacementY[index] = clamp(this.displacementY[index] + this.velocityY[index] * dt, -maxOffset * 0.46, maxOffset * 0.46)
+    }
+  }
+
+  injectImpulse(x: number, y: number, dirX: number, dirY: number, strength: number) {
+    const cols = this.lineCount
+    const rows = this.pointCount
+    const overscan = Math.max(70, this.width * 0.05)
+    const left = -overscan
+    const usableWidth = this.width + overscan * 2
+    const colGap = usableWidth / Math.max(1, cols - 1)
+    const rowGap = this.height / Math.max(1, rows - 1)
+    const radius = clamp(Math.min(this.width, this.height) * 0.16, 90, 180)
+
+    for (let col = 0; col < cols; col++) {
+      for (let row = 0; row < rows; row++) {
+        const index = col * rows + row
+        const baseX = left + col * colGap
+        const baseY = row * rowGap
+        const dx = baseX - x
+        const dy = baseY - y
         const distance = Math.max(0.001, Math.hypot(dx, dy))
-        const proximity = smoothstep(1 - distance / radius)
-        const speedGain = 1 + Math.min(0.55, this.pointer.speed / 320)
-        const normalX = dx / distance
-        const normalY = dy / distance
+        const influence = smoothstep(1 - distance / radius)
+        if (influence <= 0) continue
 
-        // A radial push plus a small rotational component produces the soft
-        // "fabric folding around the cursor" feeling without chaotic motion.
-        const radial = proximity * proximity * force * speedGain
-        const swirl = proximity * (10 + this.pointer.energy * 18)
-        const rippleForce = this.sampleRippleForce(baseX, baseY, now)
+        const nx = dirX || dx / distance
+        const ny = dirY || dy / distance
+        this.velocityX[index] += nx * influence * strength * 0.11
+        this.velocityY[index] += ny * influence * strength * 0.035
+      }
+    }
+  }
 
-        const x = baseX + ambientX + normalX * radial + -normalY * swirl + normalX * rippleForce
-        const y = baseY + ambientY + normalY * radial * 0.34 + normalX * swirl * 0.32 + normalY * rippleForce * 0.28
-        points.push({ x, y })
+  drawMesh(time: number, staticFrame: boolean) {
+    const ctx = this.ctx
+    const cols = this.lineCount
+    const rows = this.pointCount
+    const overscan = Math.max(70, this.width * 0.05)
+    const left = -overscan
+    const usableWidth = this.width + overscan * 2
+    const colGap = usableWidth / Math.max(1, cols - 1)
+    const rowGap = this.height / Math.max(1, rows - 1)
+    const px = this.pointer.x
+    const radius = clamp(Math.min(this.width, this.height) * 0.28, 160, 340)
+    const drawSoftUnderstroke = !this.coarsePointer.matches && this.width > 720
+
+    for (let col = 0; col < cols; col++) {
+      const baseX = left + col * colGap
+      let localMotion = 0
+
+      for (let row = 0; row < rows; row++) {
+        const index = col * rows + row
+        const normalizedY = row / Math.max(1, rows - 1)
+        const edgeFade = Math.sin(normalizedY * Math.PI)
+
+        // Rendering-only micro undulation sits on top of the physical mesh.
+        // Keeping it out of the simulation means it never accumulates energy.
+        const phase = col * 0.19
+        const ambientX = staticFrame
+          ? Math.sin(normalizedY * 8.6 + phase + 0.7) * 5.5 * edgeFade
+          : (
+              Math.sin(normalizedY * 8.8 + time * 0.52 + phase) * 5.2 +
+              Math.sin(normalizedY * 4.1 - time * 0.29 + phase * 1.7) * 2.4
+            ) * edgeFade
+        const ambientY = staticFrame ? 0 : Math.sin(normalizedY * 5.5 + time * 0.31 + phase) * 1.3 * edgeFade
+
+        const dx = this.displacementX[index]
+        const dy = this.displacementY[index]
+        localMotion += Math.abs(dx) + Math.abs(dy) * 1.7
+        this.pathX[row] = baseX + ambientX + dx
+        this.pathY[row] = row * rowGap + ambientY + dy
       }
 
-      const distanceFromPointer = Math.abs(baseX - px)
-      const nearPointer = smoothstep(1 - distanceFromPointer / Math.max(160, radius * 0.9))
-      const accentLine = lineIndex % 9 === 0
+      const nearPointer = smoothstep(1 - Math.abs(baseX - px) / radius)
+      const motion01 = clamp(localMotion / Math.max(1, rows * 26), 0, 1)
+      const accentLine = col % 11 === 0
 
+      // Desktop gets a very soft depth pass. Mobile skips it entirely; this
+      // halves line stroke work there while preserving the actual wave physics.
+      if (drawSoftUnderstroke) {
+        ctx.save()
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.strokeStyle = accentLine ? this.palette.accent : this.palette.secondary
+        ctx.lineWidth = accentLine ? 1.9 : 1.45
+        ctx.globalAlpha = accentLine
+          ? 0.022 + nearPointer * 0.045 + motion01 * 0.018
+          : 0.018 + nearPointer * 0.032 + motion01 * 0.012
+        this.strokeFluidPath(this.pathX, this.pathY, rows)
+        ctx.restore()
+      }
+
+      // Crisp hairline pass. No per-frame point objects are allocated; the
+      // Float32Array path buffers are reused for every line and frame.
       ctx.save()
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
       ctx.strokeStyle = accentLine ? this.palette.accent : this.palette.secondary
-      ctx.lineWidth = accentLine ? 0.9 + nearPointer * 0.35 : 0.62 + nearPointer * 0.42
+      ctx.lineWidth = accentLine ? 0.82 + nearPointer * 0.18 : 0.56 + nearPointer * 0.26
       ctx.globalAlpha = accentLine
-        ? 0.11 + nearPointer * 0.18 + this.pointer.energy * 0.04
-        : 0.105 + nearPointer * 0.12
-
-      this.strokeSmoothPath(points)
+        ? 0.095 + nearPointer * 0.115 + motion01 * 0.045
+        : 0.092 + nearPointer * 0.085 + motion01 * 0.035
+      this.strokeFluidPath(this.pathX, this.pathY, rows)
       ctx.restore()
     }
-
-    this.drawRipples(now)
   }
 
-  sampleRippleForce(x: number, y: number, now: number) {
-    let total = 0
-    for (const ripple of this.ripples) {
-      const age = (now - ripple.born) / 1000
-      const life = 1 - age / 1.15
-      if (life <= 0) continue
-      const distance = Math.hypot(x - ripple.x, y - ripple.y)
-      const ring = age * 330
-      const band = Math.exp(-Math.pow((distance - ring) / 54, 2))
-      total += band * life * 34 * ripple.strength
-    }
-    return total
-  }
-
-  strokeSmoothPath(points: { x: number; y: number }[]) {
-    if (points.length < 2) return
+  strokeFluidPath(x: Float32Array, y: Float32Array, count: number) {
+    if (count < 2) return
     const ctx = this.ctx
     ctx.beginPath()
-    ctx.moveTo(points[0].x, points[0].y)
+    ctx.moveTo(x[0], y[0])
 
-    for (let i = 1; i < points.length - 1; i++) {
-      const current = points[i]
-      const next = points[i + 1]
-      const midX = (current.x + next.x) * 0.5
-      const midY = (current.y + next.y) * 0.5
-      ctx.quadraticCurveTo(current.x, current.y, midX, midY)
+    // Catmull-Rom -> cubic Bézier conversion. It removes the tiny angular
+    // changes that quadratic midpoint paths reveal on large Retina displays.
+    for (let i = 0; i < count - 1; i++) {
+      const i0 = Math.max(0, i - 1)
+      const i1 = i
+      const i2 = i + 1
+      const i3 = Math.min(count - 1, i + 2)
+      const tension = 0.17
+
+      const cp1x = x[i1] + (x[i2] - x[i0]) * tension
+      const cp1y = y[i1] + (y[i2] - y[i0]) * tension
+      const cp2x = x[i2] - (x[i3] - x[i1]) * tension
+      const cp2y = y[i2] - (y[i3] - y[i1]) * tension
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x[i2], y[i2])
     }
 
-    const last = points[points.length - 1]
-    ctx.lineTo(last.x, last.y)
     ctx.stroke()
   }
 
   drawRipples(now: number) {
     const ctx = this.ctx
-    this.ripples = this.ripples.filter((ripple) => now - ripple.born < 1200)
+    this.ripples = this.ripples.filter((ripple) => now - ripple.born < 1300)
 
     for (const ripple of this.ripples) {
       const age = (now - ripple.born) / 1000
-      const life = clamp(1 - age / 1.2, 0, 1)
-      const radius = 12 + age * 330
+      const life = clamp(1 - age / 1.3, 0, 1)
+      const radius = 10 + age * 315
+
       ctx.save()
       ctx.strokeStyle = this.palette.accent
-      ctx.globalAlpha = life * 0.28
-      ctx.lineWidth = 1 + life * 0.8
+      ctx.globalAlpha = life * 0.12
+      ctx.lineWidth = 0.75 + life * 0.5
       ctx.beginPath()
       ctx.arc(ripple.x, ripple.y, radius, 0, Math.PI * 2)
       ctx.stroke()
@@ -456,6 +751,8 @@ export class HeroWaveEngine {
     window.removeEventListener('resize', this.onResize)
     window.removeEventListener('pointermove', this.onPointerMove)
     window.removeEventListener('pointerdown', this.onPointerDown)
+    window.removeEventListener('pointerup', this.onPointerUp)
+    window.removeEventListener('pointercancel', this.onPointerUp)
     window.removeEventListener('blur', this.onPointerLeave)
     window.removeEventListener('portfolio-theme-change', this.onThemeChange)
     document.removeEventListener('visibilitychange', this.onVisibilityChange)

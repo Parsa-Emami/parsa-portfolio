@@ -34,10 +34,6 @@ const { class: className } = Astro.props
 
 <style lang="scss">
   .hero-wave {
-    --wave-x: 52%;
-    --wave-y: 44%;
-    --wave-energy: 0;
-
     position: absolute;
     inset: 0;
     z-index: 0;
@@ -46,7 +42,6 @@ const { class: className } = Astro.props
     contain: layout paint style;
 
     &__canvas,
-    &__focus,
     &__vignette {
       position: absolute;
       inset: 0;
@@ -61,16 +56,26 @@ const { class: className } = Astro.props
     }
 
     &__focus {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: clamp(360px, 50vw, 760px);
+      aspect-ratio: 1;
+      border-radius: 50%;
       background:
         radial-gradient(
-          circle at var(--wave-x) var(--wave-y),
-          color(accent, .13) 0,
-          color(accent, .06) 13%,
-          transparent 34%
+          circle,
+          color(accent, .135) 0,
+          color(accent, .072) 20%,
+          color(accent, .025) 46%,
+          transparent 70%
         );
-      opacity: calc(.65 + var(--wave-energy));
+      opacity: .54;
       mix-blend-mode: screen;
-      transition: opacity .25s ease;
+      transform: translate3d(0, 0, 0);
+      transform-origin: 50% 50%;
+      will-change: transform, opacity;
+      backface-visibility: hidden;
     }
 
     &__vignette {
@@ -88,7 +93,7 @@ const { class: className } = Astro.props
 
   :global(.theme-contrasted) .hero-wave__focus {
     mix-blend-mode: multiply;
-    opacity: calc(.38 + var(--wave-energy));
+    opacity: .42;
   }
 
   :global(.theme-contrasted) .hero-wave__vignette {
@@ -98,14 +103,13 @@ const { class: className } = Astro.props
   }
 
   @media (max-width: 900px) {
-    .hero-wave__canvas { opacity: .82; }
-    .hero-wave__focus {
-      background: radial-gradient(circle at var(--wave-x) var(--wave-y), color(accent, .11), transparent 38%);
-    }
+    .hero-wave__canvas { opacity: .84; }
+    .hero-wave__focus { width: clamp(330px, 68vw, 620px); }
   }
 
   @media (max-width: 560px) {
-    .hero-wave__canvas { opacity: .76; }
+    .hero-wave__canvas { opacity: .79; }
+    .hero-wave__focus { width: clamp(300px, 88vw, 480px); }
     .hero-wave__vignette {
       background:
         linear-gradient(90deg, color(primary, .42), transparent 18%, transparent 82%, color(primary, .42)),
@@ -114,6 +118,6 @@ const { class: className } = Astro.props
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero-wave__focus { transition: none; }
+    .hero-wave__focus { will-change: auto; }
   }
 </style>
