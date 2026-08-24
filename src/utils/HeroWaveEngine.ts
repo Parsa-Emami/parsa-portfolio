@@ -427,8 +427,8 @@ export class HeroWaveEngine {
     // motion time-correct across 50/60/120Hz displays and gives the cursor a
     // natural, soft amount of inertia instead of a robotic delay.
     const coarse = this.coarsePointer.matches
-    const spring = coarse ? 39 : 46
-    const damping = coarse ? 12.8 : 13.6
+    const spring = coarse ? 25 : 32
+    const damping = coarse ? 7.0 : 8.5
     const ax = (this.pointer.tx - this.pointer.x) * spring - this.pointer.vx * damping
     const ay = (this.pointer.ty - this.pointer.y) * spring - this.pointer.vy * damping
 
@@ -468,9 +468,9 @@ export class HeroWaveEngine {
     const pointerForce = 1850 + this.pointer.energy * 2350 + speed01 * 900
     const dragForce = 0.52 + speed01 * 0.38
 
-    const coupling = 62
-    const restoring = 11.8
-    const damping = 5.5
+    const coupling = 75
+    const restoring = 9.5
+    const damping = 4.2
     const maxOffset = Math.min(92, this.width * 0.095)
 
     // Calculate all accelerations from the same previous state before any node

@@ -73,12 +73,12 @@ import IconGlyph from './IconGlyph.astro'
   const bootSmoothScroll = () => {
     if (reduceMotion) return
     lenis = new Lenis({
-      duration: 1.32,
+      duration: 1.8,
       smoothWheel: true,
       syncTouch: false,
-      wheelMultiplier: 0.86,
-      touchMultiplier: 1.08,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      wheelMultiplier: 1.1,
+      touchMultiplier: 1.3,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -14 * t)),
     })
     lenis.on('scroll', ScrollTrigger.update)
     gsap.ticker.add((time) => lenis.raf(time * 1000))
@@ -202,13 +202,13 @@ import IconGlyph from './IconGlyph.astro'
         line.appendChild(inner)
       })
       gsap.fromTo(element.querySelectorAll('.motion-line__inner'),
-        { yPercent: 118, rotate: 2, filter: 'blur(9px)' },
+        { yPercent: 120, rotate: 4, filter: 'blur(12px)' },
         {
           yPercent: 0,
           rotate: 0,
           filter: 'blur(0px)',
-          duration: 1.35,
-          stagger: 0.075,
+          duration: 1.6,
+          stagger: 0.05,
           ease: 'expo.out',
           scrollTrigger: { trigger: element, start: 'top 86%', once: true },
         }
@@ -527,12 +527,12 @@ import IconGlyph from './IconGlyph.astro'
       if (!(card instanceof HTMLElement)) return
       const strength = Number(card.getAttribute('data-tilt')) || 6
       const inheritsPerspective = card.getAttribute('data-tilt-perspective') === 'inherit'
-      if (!inheritsPerspective) gsap.set(card, { transformPerspective: 950 })
+      if (!inheritsPerspective) gsap.set(card, { transformPerspective: 1200 })
       gsap.set(card, { transformStyle: 'preserve-3d' })
 
-      const setRX = gsap.quickTo(card, 'rotationX', { duration: .7, ease: 'power3.out' })
-      const setRY = gsap.quickTo(card, 'rotationY', { duration: .7, ease: 'power3.out' })
-      const setZ = gsap.quickTo(card, 'z', { duration: .7, ease: 'power3.out' })
+      const setRX = gsap.quickTo(card, 'rotationX', { duration: 0.85, ease: 'expo.out' })
+      const setRY = gsap.quickTo(card, 'rotationY', { duration: 0.85, ease: 'expo.out' })
+      const setZ = gsap.quickTo(card, 'z', { duration: 0.85, ease: 'expo.out' })
 
       card.addEventListener('pointermove', (event) => {
         const rect = card.getBoundingClientRect()
@@ -540,7 +540,7 @@ import IconGlyph from './IconGlyph.astro'
         const py = (event.clientY - rect.top) / rect.height - 0.5
         setRY(px * strength)
         setRX(py * -strength)
-        setZ(16)
+        setZ(24)
       })
       card.addEventListener('pointerleave', () => {
         setRX(0)
@@ -557,10 +557,10 @@ import IconGlyph from './IconGlyph.astro'
         const rect = element.getBoundingClientRect()
         const x = event.clientX - rect.left - rect.width / 2
         const y = event.clientY - rect.top - rect.height / 2
-        gsap.to(element, { x: x * 0.16, y: y * 0.16, duration: 0.35, ease: 'power2.out' })
+        gsap.to(element, { x: x * 0.16, y: y * 0.16, duration: 0.4, ease: 'power2.out' })
       })
       element.addEventListener('pointerleave', () => {
-        gsap.to(element, { x: 0, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.45)' })
+        gsap.to(element, { x: 0, y: 0, duration: 0.8, ease: 'elastic.out(1, 0.3)' })
       })
     })
   }

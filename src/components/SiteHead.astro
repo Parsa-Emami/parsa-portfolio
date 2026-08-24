@@ -112,7 +112,7 @@ const menu = [
 
     const cleanup = () => overlay.remove()
     overlay.addEventListener('transitionend', cleanup, { once: true })
-    setTimeout(cleanup, 1100)
+    setTimeout(cleanup, 1300)
   }
 
   toggle?.addEventListener('click', (event) => {
@@ -447,7 +447,7 @@ const menu = [
     inset: 0;
     z-index: 995;
     pointer-events: none;
-    transition: clip-path .85s cubic-bezier(.65, 0, .35, 1);
+    transition: clip-path 1.2s cubic-bezier(0.76, 0, 0.24, 1);
     will-change: clip-path;
   }
 
