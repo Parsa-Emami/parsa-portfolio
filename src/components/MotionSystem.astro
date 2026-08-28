@@ -11,8 +11,8 @@ import IconGlyph from './IconGlyph.astro'
 </svg>
 
 <div class="ambient-field" data-ambient-field aria-hidden="true">
-  <span class="ambient-field__blob ambient-field__blob--a"></span>
-  <span class="ambient-field__blob ambient-field__blob--b"></span>
+  <span class="ambient-field__blob ambient-field__blob--a"><i></i></span>
+  <span class="ambient-field__blob ambient-field__blob--b"><i></i></span>
 </div>
 
 <div class="motion-light" data-motion-light aria-hidden="true"></div>
@@ -21,6 +21,12 @@ import IconGlyph from './IconGlyph.astro'
   <span class="motion-chapter__eyebrow">NOW VIEWING</span>
   <span class="motion-chapter__name" data-section-name-current>Intro</span>
   <span class="motion-chapter__index" data-section-index-current>01 / 07</span>
+</div>
+
+<div class="motion-scene-gate" data-scene-gate aria-hidden="true">
+  <i class="motion-scene-gate__line" data-scene-gate-line></i>
+  <span class="motion-scene-gate__index" data-scene-gate-index>01</span>
+  <span class="motion-scene-gate__name" data-scene-gate-name>INTRO</span>
 </div>
 
 <div class="motion-loader" data-motion-loader aria-hidden="true">
@@ -52,6 +58,7 @@ import IconGlyph from './IconGlyph.astro'
   import { gsap } from 'gsap'
   import { ScrollTrigger } from 'gsap/ScrollTrigger'
   import { SplitText } from 'gsap/SplitText'
+  import { ScrollKinetics } from '../utils/motion/ScrollKinetics'
 
   gsap.registerPlugin(ScrollTrigger, SplitText)
 
@@ -63,25 +70,37 @@ import IconGlyph from './IconGlyph.astro'
   const coarsePointer = window.matchMedia('(pointer: coarse)').matches
   const desktop = window.matchMedia('(min-width: 901px)')
   const body = document.body
-  const loader = document.querySelector('[data-motion-loader]')
-  const loaderCounter = document.querySelector('[data-loader-counter]')
-  const loaderRail = document.querySelector('[data-loader-rail]')
-  const loaderWord = document.querySelector('[data-loader-word]')
+  const kinetics = new ScrollKinetics(document.documentElement)
+  const responsiveMotion = gsap.matchMedia()
+  const loader = document.querySelector<HTMLElement>('[data-motion-loader]')
+  const loaderCounter = document.querySelector<HTMLElement>('[data-loader-counter]')
+  const loaderRail = document.querySelector<HTMLElement>('[data-loader-rail]')
+  const loaderWord = document.querySelector<HTMLElement>('[data-loader-word]')
 
   let lenis
+  const lenisRaf = (time) => lenis?.raf(time * 1000)
 
   const bootSmoothScroll = () => {
     if (reduceMotion) return
     lenis = new Lenis({
-      duration: 1.8,
+      duration: 1.28,
       smoothWheel: true,
       syncTouch: false,
-      wheelMultiplier: 1.1,
-      touchMultiplier: 1.3,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -14 * t)),
+      wheelMultiplier: .96,
+      touchMultiplier: 1.16,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -13 * t)),
     })
-    lenis.on('scroll', ScrollTrigger.update)
-    gsap.ticker.add((time) => lenis.raf(time * 1000))
+    lenis.on('scroll', (event) => {
+      ScrollTrigger.update()
+      kinetics.push({
+        scroll: event.scroll,
+        limit: event.limit,
+        velocity: event.velocity,
+        direction: event.direction,
+        progress: event.progress,
+      })
+    })
+    gsap.ticker.add(lenisRaf)
     gsap.ticker.lagSmoothing(0)
     ;(window as any).__portfolioLenis = lenis
     lenis.stop()
@@ -95,7 +114,7 @@ import IconGlyph from './IconGlyph.astro'
       return Promise.resolve()
     }
 
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       const counter = { value: 0 }
       const main = document.querySelector('main')
       if (main) gsap.set(main, { scale: 1.045, filter: 'blur(9px)', transformOrigin: '50% 50%' })
@@ -554,9 +573,10 @@ import IconGlyph from './IconGlyph.astro'
     if (coarsePointer || reduceMotion) return
     document.querySelectorAll('[data-magnetic]').forEach((element) => {
       element.addEventListener('pointermove', (event) => {
+        const pointerEvent = event as PointerEvent
         const rect = element.getBoundingClientRect()
-        const x = event.clientX - rect.left - rect.width / 2
-        const y = event.clientY - rect.top - rect.height / 2
+        const x = pointerEvent.clientX - rect.left - rect.width / 2
+        const y = pointerEvent.clientY - rect.top - rect.height / 2
         gsap.to(element, { x: x * 0.16, y: y * 0.16, duration: 0.4, ease: 'power2.out' })
       })
       element.addEventListener('pointerleave', () => {
@@ -580,34 +600,92 @@ import IconGlyph from './IconGlyph.astro'
   const initSectionHUD = () => {
     const name = document.querySelector('[data-section-name-current]')
     const index = document.querySelector('[data-section-index-current]')
+    const gate = document.querySelector('[data-scene-gate]')
+    const gateLine = document.querySelector('[data-scene-gate-line]')
+    const gateIndex = document.querySelector('[data-scene-gate-index]')
+    const gateName = document.querySelector('[data-scene-gate-name]')
     const sections = Array.from(document.querySelectorAll('[data-section-name]'))
     if (!name || !index || !sections.length) return
 
+    let activeIndex = -1
+
+    const pulseScene = (currentIndex, sectionName) => {
+      if (reduceMotion || !gate || !gateLine || !gateIndex || !gateName || currentIndex === 0) return
+      gateIndex.textContent = String(currentIndex + 1).padStart(2, '0')
+      gateName.textContent = sectionName.toUpperCase()
+      gsap.killTweensOf([gate, gateLine, gateIndex, gateName])
+
+      const direction = Number(getComputedStyle(document.documentElement).getPropertyValue('--scroll-direction')) || 1
+      const enterOrigin = direction > 0 ? 'left center' : 'right center'
+      const exitOrigin = direction > 0 ? 'right center' : 'left center'
+
+      gsap.timeline()
+        .set(gate, { autoAlpha: 1 })
+        .set(gateLine, { transformOrigin: enterOrigin })
+        .fromTo(gateLine, { scaleX: 0 }, { scaleX: 1, duration: .22, ease: 'power3.in' })
+        .fromTo(gateIndex, { yPercent: 80, opacity: 0 }, { yPercent: 0, opacity: .18, duration: .42, ease: 'expo.out' }, '-=.08')
+        .fromTo(gateName, { yPercent: 55, opacity: 0 }, { yPercent: 0, opacity: .72, duration: .38, ease: 'expo.out' }, '<.03')
+        .set(gateLine, { transformOrigin: exitOrigin })
+        .to(gateLine, { scaleX: 0, duration: .46, ease: 'expo.out' }, '-=.06')
+        .to([gateIndex, gateName], { opacity: 0, duration: .28, ease: 'power2.out' }, '-=.28')
+        .set(gate, { autoAlpha: 0 })
+    }
+
     const update = (section) => {
       const currentIndex = sections.indexOf(section)
-      name.textContent = section.getAttribute('data-section-name') || 'Portfolio'
+      if (currentIndex < 0 || currentIndex === activeIndex) return
+      activeIndex = currentIndex
+      const sectionName = section.getAttribute('data-section-name') || 'Portfolio'
+      name.textContent = sectionName
       index.textContent = `${String(currentIndex + 1).padStart(2, '0')} / ${String(sections.length).padStart(2, '0')}`
+      pulseScene(currentIndex, sectionName)
     }
 
     const observer = new IntersectionObserver((entries) => {
-      const visible = entries.find((entry) => entry.isIntersecting)
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top))[0]
       if (visible) update(visible.target)
-    }, { rootMargin: '-48% 0px -48% 0px', threshold: 0 })
+    }, { rootMargin: '-46% 0px -46% 0px', threshold: 0 })
+
     sections.forEach((section) => observer.observe(section))
+    update(sections[0])
   }
 
   const initProgress = () => {
-    const bar = document.querySelector('[data-scroll-progress]')
-    const value = document.querySelector('[data-scroll-value]')
+    const bar = document.querySelector<HTMLElement>('[data-scroll-progress]')
+    const value = document.querySelector<HTMLElement>('[data-scroll-value]')
     if (!bar || !value) return
-    const update = () => {
+
+    const render = (progress) => {
+      const safe = Math.min(1, Math.max(0, progress))
+      bar.style.transform = `scaleY(${safe})`
+      value.textContent = String(Math.round(safe * 100)).padStart(2, '0')
+    }
+
+    const updateNative = () => {
       const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight)
       const progress = Math.min(1, Math.max(0, window.scrollY / max))
-      bar.style.transform = `scaleY(${progress})`
-      value.textContent = String(Math.round(progress * 100)).padStart(2, '0')
+      render(progress)
+      if (!lenis) kinetics.setNativeProgress(window.scrollY, max)
     }
-    update()
-    window.addEventListener('scroll', update, { passive: true })
+
+    updateNative()
+    window.addEventListener('scroll', updateNative, { passive: true })
+    lenis?.on('scroll', (event) => render(event.progress))
+  }
+
+  const initResponsiveScenes = () => {
+    responsiveMotion.add('(min-width: 901px)', () => {
+      initManifestMotion()
+      initAboutMotion()
+      initSystemsMotion()
+      initOpenSourceMotion()
+    })
+
+    responsiveMotion.add('(max-width: 900px)', () => {
+      initMobileCardReveals()
+    })
   }
 
   const init = async () => {
@@ -620,11 +698,7 @@ import IconGlyph from './IconGlyph.astro'
     await runLoader()
     initHeroMotion()
     initGlobalReveals()
-    initManifestMotion()
-    initAboutMotion()
-    initSystemsMotion()
-    initOpenSourceMotion()
-    initMobileCardReveals()
+    initResponsiveScenes()
     initExperienceMotion()
     initCTAMotion()
     initMagnetic()
@@ -634,12 +708,26 @@ import IconGlyph from './IconGlyph.astro'
 
   init()
 
+  window.addEventListener('pagehide', () => {
+    gsap.ticker.remove(lenisRaf)
+    lenis?.destroy()
+    responsiveMotion.revert()
+    kinetics.destroy()
+  }, { once: true })
+
   window.addEventListener('portfolio-theme-change', () => {
     requestAnimationFrame(() => ScrollTrigger.refresh())
   })
 </script>
 
 <style lang="scss" is:global>
+  :root {
+    --scroll-progress: 0;
+    --scroll-speed: 0;
+    --scroll-signed: 0;
+    --scroll-direction: 1;
+  }
+
   body:not(.is-ready) { overflow: hidden; }
 
   .motion-grain {
@@ -648,7 +736,7 @@ import IconGlyph from './IconGlyph.astro'
     z-index: 90;
     width: 140%;
     height: 140%;
-    opacity: .028;
+    opacity: calc(.022 + var(--scroll-speed) * .014);
     mix-blend-mode: overlay;
     pointer-events: none;
     animation: motion-grain-shift 1s steps(4) infinite;
@@ -706,6 +794,9 @@ import IconGlyph from './IconGlyph.astro'
     font-family: font-family(fraktion);
     text-transform: uppercase;
     pointer-events: none;
+    transform: translate3d(0, calc(var(--scroll-signed) * -5px), 0) skewY(calc(var(--scroll-signed) * -.7deg));
+    transform-origin: left bottom;
+    will-change: transform;
 
     &__eyebrow { grid-column: 1 / -1; color: color(muted); font-size: .46rem; letter-spacing: .14em; }
     &__name { color: color(secondary); font-size: .58rem; font-weight: 700; letter-spacing: .08em; }
@@ -726,23 +817,34 @@ import IconGlyph from './IconGlyph.astro'
       position: absolute;
       width: min(60vw, 46rem);
       aspect-ratio: 1;
-      border-radius: 50%;
-      filter: blur(min(9vw, 7rem));
       opacity: .28;
       will-change: transform;
+
+      > i {
+        position: absolute;
+        inset: 0;
+        display: block;
+        border-radius: 50%;
+        filter: blur(min(9vw, 7rem));
+        will-change: transform;
+      }
     }
     &__blob--a {
       top: -14%;
       left: -8%;
-      background: radial-gradient(circle, color(accent) 0%, transparent 68%);
-      animation: ambient-drift-a 26s ease-in-out infinite;
+      > i {
+        background: radial-gradient(circle, color(accent) 0%, transparent 68%);
+        animation: ambient-drift-a 26s ease-in-out infinite;
+      }
     }
     &__blob--b {
       right: -12%;
       bottom: -16%;
-      background: radial-gradient(circle, color(secondary) 0%, transparent 70%);
       opacity: .16;
-      animation: ambient-drift-b 32s ease-in-out infinite;
+      > i {
+        background: radial-gradient(circle, color(secondary) 0%, transparent 70%);
+        animation: ambient-drift-b 32s ease-in-out infinite;
+      }
     }
   }
 
@@ -761,11 +863,55 @@ import IconGlyph from './IconGlyph.astro'
   }
 
   @media (max-width: 600px) {
-    .ambient-field__blob { width: 80vw; filter: blur(min(14vw, 6rem)); }
+    .ambient-field__blob { width: 80vw; }
+    .ambient-field__blob > i { filter: blur(min(14vw, 6rem)); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ambient-field__blob { animation: none; }
+    .ambient-field__blob > i { animation: none; }
+  }
+
+  .motion-scene-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 57;
+    display: grid;
+    place-items: center;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+
+    &__line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, color(accent) 14%, color(secondary) 50%, color(accent) 86%, transparent);
+      box-shadow: 0 0 1.8rem color(accent, .42);
+      transform: scaleX(0);
+    }
+
+    &__index {
+      color: color(secondary);
+      font: 700 clamp(7rem, 18vw, 18rem)/.7 font-family(bigger);
+      letter-spacing: -.02em;
+      opacity: 0;
+      text-shadow: 0 0 4rem color(accent, .12);
+    }
+
+    &__name {
+      position: absolute;
+      top: calc(50% + clamp(3.5rem, 8vw, 7rem));
+      color: color(accent);
+      font: 700 .58rem/1 font-family(fraktion);
+      letter-spacing: .18em;
+      opacity: 0;
+    }
+  }
+
+  :global(.theme-contrasted) .motion-scene-gate__line {
+    background: linear-gradient(90deg, transparent, color(accent) 14%, color(secondary) 50%, color(accent) 86%, transparent);
   }
 
   .motion-loader {
@@ -906,7 +1052,7 @@ import IconGlyph from './IconGlyph.astro'
         inset: 0;
         display: block;
         background: color(accent);
-        box-shadow: 0 0 1rem color(accent, .45);
+        box-shadow: 0 0 calc(1rem + var(--scroll-speed) * 1.6rem) color(accent, .55);
         transform: scaleY(0);
         transform-origin: top;
       }
@@ -917,11 +1063,11 @@ import IconGlyph from './IconGlyph.astro'
   .motion-line__inner { display: block; will-change: transform, filter; }
 
   @media (pointer: coarse), (max-width: 900px) {
-    .motion-cursor, .motion-progress, .motion-light, .motion-chapter { display: none; }
+    .motion-cursor, .motion-progress, .motion-light, .motion-chapter, .motion-scene-gate { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .motion-loader { display: none; }
+    .motion-loader, .motion-scene-gate { display: none; }
     body:not(.is-ready) { overflow: auto; }
   }
 </style>

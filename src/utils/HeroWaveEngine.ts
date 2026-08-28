@@ -33,15 +33,36 @@ type PointerState = {
   energy: number
   inside: boolean
   touching: boolean
+  pointerId: number | null
   lastInputTime: number
   lastInputX: number
   lastInputY: number
 }
 
+type PendingImpulse = {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  strength: number
+} | null
+
 const FIXED_STEP = 1 / 120
-const MAX_SUBSTEPS = 4
+const MAX_SUBSTEPS = 5
 const MAX_ELAPSED = 0.05
 
+/**
+ * Canvas 2D spring-mesh wave field.
+ *
+ * Architecture notes:
+ * - input is sampled at window level so overlays / pointer-events cannot starve it;
+ * - coalesced pointer samples are consumed when available, with a guaranteed fallback;
+ * - physics is fixed-step at 120 Hz and rendering is quality-governed independently;
+ * - pointer velocity injects a real impulse into the mesh, then neighbour coupling
+ *   propagates it like a soft membrane instead of merely offsetting line paths;
+ * - mesh state is resampled when quality changes, avoiding visible resets;
+ * - the engine sleeps offscreen / in hidden tabs and exposes status in data-* attrs.
+ */
 export class HeroWaveEngine {
   private readonly host: HTMLElement
   private readonly interactionRoot: HTMLElement
@@ -66,6 +87,7 @@ export class HeroWaveEngine {
   private mesh: MeshState = this.makeMesh(this.quality)
   private lineBuffer = new Float32Array(this.quality.pointCount * 2)
   private ripples: Ripple[] = []
+  private pendingImpulse: PendingImpulse = null
 
   private reducedMotion = false
   private coarsePointer = false
@@ -83,6 +105,7 @@ export class HeroWaveEngine {
     energy: 0,
     inside: false,
     touching: false,
+    pointerId: null,
     lastInputTime: 0,
     lastInputX: 0,
     lastInputY: 0,
@@ -90,8 +113,8 @@ export class HeroWaveEngine {
 
   private readonly reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
   private readonly coarsePointerQuery = window.matchMedia('(pointer: coarse)')
-  private readonly resizeObserver: ResizeObserver
-  private readonly intersectionObserver: IntersectionObserver
+  private resizeObserver?: ResizeObserver
+  private intersectionObserver?: IntersectionObserver
 
   constructor(host: HTMLElement) {
     this.host = host
@@ -105,41 +128,40 @@ export class HeroWaveEngine {
     this.reducedMotion = this.reducedMotionQuery.matches
     this.coarsePointer = this.coarsePointerQuery.matches
 
-    this.resizeObserver = new ResizeObserver(this.queueResize)
-    this.intersectionObserver = new IntersectionObserver(this.onIntersection, {
-      rootMargin: '160px 0px',
-      threshold: 0.01,
-    })
-
     this.bind()
-    this.resizeObserver.observe(host)
-    this.intersectionObserver.observe(host)
+    this.observe()
     this.resize()
     this.render(0, true)
+    this.syncStatus()
 
-    if (!this.reducedMotion) this.raf = requestAnimationFrame(this.tick)
+    if (!this.reducedMotion) this.ensureRunning()
   }
 
   destroy() {
     if (this.destroyed) return
     this.destroyed = true
     cancelAnimationFrame(this.raf)
-    this.resizeObserver.disconnect()
-    this.intersectionObserver.disconnect()
+    this.raf = 0
+    this.resizeObserver?.disconnect()
+    this.intersectionObserver?.disconnect()
 
-    this.interactionRoot.removeEventListener('pointermove', this.onPointerMove)
-    this.interactionRoot.removeEventListener('pointerdown', this.onPointerDown)
-    this.interactionRoot.removeEventListener('pointerup', this.onPointerUp)
-    this.interactionRoot.removeEventListener('pointercancel', this.onPointerUp)
-    this.interactionRoot.removeEventListener('pointerleave', this.onPointerLeave)
+    window.removeEventListener('pointermove', this.onPointerMove)
+    window.removeEventListener('pointerdown', this.onPointerDown)
+    window.removeEventListener('pointerup', this.onPointerUp)
+    window.removeEventListener('pointercancel', this.onPointerUp)
+    window.removeEventListener('blur', this.onWindowBlur)
+    window.removeEventListener('resize', this.queueResize)
     document.removeEventListener('visibilitychange', this.onVisibilityChange)
-    this.reducedMotionQuery.removeEventListener('change', this.onReducedMotionChange)
-    this.coarsePointerQuery.removeEventListener('change', this.onCoarsePointerChange)
-    window.removeEventListener('themechange', this.onThemeChange as EventListener)
+    if (this.reducedMotionQuery.removeEventListener) this.reducedMotionQuery.removeEventListener('change', this.onReducedMotionChange)
+    else this.reducedMotionQuery.removeListener?.(this.onReducedMotionChange)
+    if (this.coarsePointerQuery.removeEventListener) this.coarsePointerQuery.removeEventListener('change', this.onCoarsePointerChange)
+    else this.coarsePointerQuery.removeListener?.(this.onCoarsePointerChange)
+    window.removeEventListener('portfolio-theme-change', this.onThemeChange as EventListener)
 
     this.host.style.removeProperty('--wave-x')
     this.host.style.removeProperty('--wave-y')
     this.host.style.removeProperty('--wave-energy')
+    this.host.dataset.waveStatus = 'destroyed'
   }
 
   private createCanvas() {
@@ -151,15 +173,52 @@ export class HeroWaveEngine {
   }
 
   private bind() {
-    this.interactionRoot.addEventListener('pointermove', this.onPointerMove, { passive: true })
-    this.interactionRoot.addEventListener('pointerdown', this.onPointerDown, { passive: true })
-    this.interactionRoot.addEventListener('pointerup', this.onPointerUp, { passive: true })
-    this.interactionRoot.addEventListener('pointercancel', this.onPointerUp, { passive: true })
-    this.interactionRoot.addEventListener('pointerleave', this.onPointerLeave, { passive: true })
+    // Window-level routing is intentional. The hero contains decorative layers
+    // with pointer-events:none and fixed navigation can sit above it; filtering
+    // by hero bounds is more reliable than relying on DOM bubbling.
+    window.addEventListener('pointermove', this.onPointerMove, { passive: true })
+    window.addEventListener('pointerdown', this.onPointerDown, { passive: true })
+    window.addEventListener('pointerup', this.onPointerUp, { passive: true })
+    window.addEventListener('pointercancel', this.onPointerUp, { passive: true })
+    window.addEventListener('blur', this.onWindowBlur, { passive: true })
+    window.addEventListener('resize', this.queueResize, { passive: true })
     document.addEventListener('visibilitychange', this.onVisibilityChange, { passive: true })
-    this.reducedMotionQuery.addEventListener('change', this.onReducedMotionChange)
-    this.coarsePointerQuery.addEventListener('change', this.onCoarsePointerChange)
-    window.addEventListener('themechange', this.onThemeChange as EventListener, { passive: true })
+    if (this.reducedMotionQuery.addEventListener) this.reducedMotionQuery.addEventListener('change', this.onReducedMotionChange)
+    else this.reducedMotionQuery.addListener?.(this.onReducedMotionChange)
+    if (this.coarsePointerQuery.addEventListener) this.coarsePointerQuery.addEventListener('change', this.onCoarsePointerChange)
+    else this.coarsePointerQuery.addListener?.(this.onCoarsePointerChange)
+    window.addEventListener('portfolio-theme-change', this.onThemeChange as EventListener, { passive: true })
+  }
+
+  private observe() {
+    if ('ResizeObserver' in window) {
+      this.resizeObserver = new ResizeObserver(this.queueResize)
+      this.resizeObserver.observe(this.host)
+    }
+
+    if ('IntersectionObserver' in window) {
+      this.intersectionObserver = new IntersectionObserver(this.onIntersection, {
+        rootMargin: '180px 0px',
+        threshold: 0.01,
+      })
+      this.intersectionObserver.observe(this.host)
+    }
+  }
+
+  private syncStatus() {
+    this.host.dataset.waveQuality = this.qualityKey
+    if (this.destroyed) this.host.dataset.waveStatus = 'destroyed'
+    else if (this.reducedMotion) this.host.dataset.waveStatus = 'reduced-motion'
+    else if (!this.visible || document.hidden) this.host.dataset.waveStatus = 'sleeping'
+    else this.host.dataset.waveStatus = this.raf ? 'running' : 'ready'
+  }
+
+  private ensureRunning() {
+    if (this.destroyed || this.reducedMotion || document.hidden || !this.visible || this.raf) return
+    this.lastTick = 0
+    this.lastRender = 0
+    this.raf = requestAnimationFrame(this.tick)
+    this.syncStatus()
   }
 
   private readonly queueResize = () => {
@@ -173,25 +232,23 @@ export class HeroWaveEngine {
 
   private readonly onIntersection = (entries: IntersectionObserverEntry[]) => {
     this.visible = entries.some((entry) => entry.isIntersecting)
-    if (this.visible && !this.reducedMotion && !this.destroyed && !this.raf) {
-      this.lastTick = 0
-      this.lastRender = 0
-      this.raf = requestAnimationFrame(this.tick)
+    if (!this.visible) {
+      cancelAnimationFrame(this.raf)
+      this.raf = 0
+    } else {
+      this.ensureRunning()
     }
+    this.syncStatus()
   }
 
   private readonly onVisibilityChange = () => {
     if (document.hidden) {
       cancelAnimationFrame(this.raf)
       this.raf = 0
-      return
+    } else {
+      this.ensureRunning()
     }
-
-    if (this.visible && !this.reducedMotion && !this.destroyed && !this.raf) {
-      this.lastTick = 0
-      this.lastRender = 0
-      this.raf = requestAnimationFrame(this.tick)
-    }
+    this.syncStatus()
   }
 
   private readonly onReducedMotionChange = (event: MediaQueryListEvent) => {
@@ -202,13 +259,14 @@ export class HeroWaveEngine {
 
     if (this.reducedMotion) {
       this.pointer.energy = 0
+      this.pointer.inside = false
       this.ripples.length = 0
+      this.pendingImpulse = null
       this.render(0, true)
-    } else if (this.visible && !document.hidden && !this.destroyed) {
-      this.lastTick = 0
-      this.lastRender = 0
-      this.raf = requestAnimationFrame(this.tick)
+    } else {
+      this.ensureRunning()
     }
+    this.syncStatus()
   }
 
   private readonly onCoarsePointerChange = (event: MediaQueryListEvent) => {
@@ -220,18 +278,33 @@ export class HeroWaveEngine {
     this.paletteDirty = true
   }
 
+  private readonly onWindowBlur = () => {
+    this.pointer.inside = false
+    this.pointer.touching = false
+    this.pointer.pointerId = null
+  }
+
   private readonly onPointerMove = (event: PointerEvent) => {
     if (this.reducedMotion) return
-    const samples = event.getCoalescedEvents?.() ?? [event]
+    if ((event.pointerType === 'touch' || event.pointerType === 'pen') && !this.pointer.touching) return
+
+    const coalesced = event.getCoalescedEvents?.()
+    const samples = coalesced && coalesced.length ? coalesced : [event]
     for (const sample of samples) this.capturePointerSample(sample)
+
+    this.ensureRunning()
   }
 
   private readonly onPointerDown = (event: PointerEvent) => {
     if (this.reducedMotion) return
-    this.pointer.touching = event.pointerType === 'touch'
-    this.capturePointerSample(event)
+    if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+      this.pointer.touching = true
+      this.pointer.pointerId = event.pointerId
+    }
 
-    const strength = event.pointerType === 'touch' ? 0.78 : 0.56
+    if (!this.capturePointerSample(event)) return
+
+    const strength = event.pointerType === 'touch' ? 1 : event.pointerType === 'pen' ? 0.88 : 0.72
     this.ripples.push({
       x: this.pointer.targetX,
       y: this.pointer.targetY,
@@ -239,33 +312,54 @@ export class HeroWaveEngine {
       strength,
     })
     if (this.ripples.length > this.quality.rippleLimit) this.ripples.shift()
+
+    this.pendingImpulse = {
+      x: this.pointer.targetX,
+      y: this.pointer.targetY,
+      vx: this.pointer.inputVx,
+      vy: this.pointer.inputVy,
+      strength: Math.max(0.72, strength),
+    }
+    this.ensureRunning()
   }
 
-  private readonly onPointerUp = () => {
+  private readonly onPointerUp = (event: PointerEvent) => {
+    if (this.pointer.pointerId !== null && event.pointerId !== this.pointer.pointerId) return
     this.pointer.touching = false
+    this.pointer.pointerId = null
+    if (event.pointerType === 'touch' || event.pointerType === 'pen') this.pointer.inside = false
   }
 
-  private readonly onPointerLeave = () => {
-    this.pointer.inside = false
-    this.pointer.touching = false
-  }
-
-  private capturePointerSample(event: PointerEvent) {
+  private capturePointerSample(event: PointerEvent): boolean {
     const rect = this.interactionRoot.getBoundingClientRect()
-    const x = clamp(event.clientX - rect.left, 0, rect.width)
-    const y = clamp(event.clientY - rect.top, 0, rect.height)
+    const inside =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+
+    if (!inside) {
+      this.pointer.inside = false
+      return false
+    }
+
     const scaleX = this.width / Math.max(1, rect.width)
     const scaleY = this.height / Math.max(1, rect.height)
-    const localX = x * scaleX
-    const localY = y * scaleY
-    const time = event.timeStamp || performance.now()
+    const localX = clamp((event.clientX - rect.left) * scaleX, 0, this.width)
+    const localY = clamp((event.clientY - rect.top) * scaleY, 0, this.height)
+    const time = event.timeStamp > 0 ? event.timeStamp : performance.now()
+
+    let sampleVx = this.pointer.inputVx
+    let sampleVy = this.pointer.inputVy
+    let speed = 0
 
     if (this.pointer.lastInputTime > 0) {
       const dt = clamp((time - this.pointer.lastInputTime) / 1000, 1 / 240, 0.05)
-      const vx = (localX - this.pointer.lastInputX) / dt
-      const vy = (localY - this.pointer.lastInputY) / dt
-      this.pointer.inputVx = damp(this.pointer.inputVx, vx, 28, dt)
-      this.pointer.inputVy = damp(this.pointer.inputVy, vy, 28, dt)
+      sampleVx = (localX - this.pointer.lastInputX) / dt
+      sampleVy = (localY - this.pointer.lastInputY) / dt
+      speed = hypot2(sampleVx, sampleVy)
+      this.pointer.inputVx = damp(this.pointer.inputVx, sampleVx, 36, dt)
+      this.pointer.inputVy = damp(this.pointer.inputVy, sampleVy, 36, dt)
     }
 
     this.pointer.targetX = localX
@@ -274,14 +368,27 @@ export class HeroWaveEngine {
     this.pointer.lastInputY = localY
     this.pointer.lastInputTime = time
     this.pointer.inside = true
+
+    // Convert cursor velocity into a one-shot physical wake. Slow movement still
+    // produces a visible dimple; fast movement injects much more directional energy.
+    if (speed > 18) {
+      const strength = clamp(speed / 1550, 0.12, 1)
+      this.pendingImpulse = {
+        x: localX,
+        y: localY,
+        vx: sampleVx,
+        vy: sampleVy,
+        strength,
+      }
+    }
+
+    return true
   }
 
   private resize() {
     const rect = this.host.getBoundingClientRect()
-    const nextWidth = Math.max(1, Math.round(rect.width))
-    const nextHeight = Math.max(1, Math.round(rect.height))
-    this.width = nextWidth
-    this.height = nextHeight
+    this.width = Math.max(1, Math.round(rect.width))
+    this.height = Math.max(1, Math.round(rect.height))
 
     this.pickQuality(false)
     this.dpr = Math.min(window.devicePixelRatio || 1, this.quality.maxDpr)
@@ -328,6 +435,7 @@ export class HeroWaveEngine {
       ? this.resampleMesh(oldMesh, oldQuality, this.quality)
       : this.makeMesh(this.quality)
     this.lineBuffer = new Float32Array(this.quality.pointCount * 2)
+    this.host.dataset.waveQuality = key
 
     const nextDpr = Math.min(window.devicePixelRatio || 1, this.quality.maxDpr)
     if (Math.abs(nextDpr - this.dpr) > 0.01 && this.width > 1 && this.height > 1) {
@@ -348,11 +456,7 @@ export class HeroWaveEngine {
     }
   }
 
-  private resampleMesh(
-    source: MeshState,
-    from: WaveQualityPreset,
-    to: WaveQualityPreset,
-  ): MeshState {
+  private resampleMesh(source: MeshState, from: WaveQualityPreset, to: WaveQualityPreset): MeshState {
     if (!source.dx.length || from.lineCount < 2 || from.pointCount < 2) return this.makeMesh(to)
 
     const target = this.makeMesh(to)
@@ -393,11 +497,14 @@ export class HeroWaveEngine {
 
   private readonly tick = (now: number) => {
     this.raf = 0
-    if (this.destroyed || this.reducedMotion || document.hidden || !this.visible) return
+    if (this.destroyed || this.reducedMotion || document.hidden || !this.visible) {
+      this.syncStatus()
+      return
+    }
 
     this.raf = requestAnimationFrame(this.tick)
     const frameBudget = 1000 / this.quality.targetFps
-    if (this.lastRender && now - this.lastRender < frameBudget * 0.82) return
+    if (this.lastRender && now - this.lastRender < frameBudget * 0.84) return
 
     const elapsed = this.lastTick ? Math.min(MAX_ELAPSED, (now - this.lastTick) / 1000) : FIXED_STEP
     this.lastTick = now
@@ -415,32 +522,37 @@ export class HeroWaveEngine {
     const renderCost = performance.now() - renderStart
     this.lastRender = now
 
-    const newQuality = this.qualityGovernor.push(renderCost, now)
-    if (newQuality && newQuality !== this.qualityKey) this.setQuality(newQuality, true)
+    const nextQuality = this.qualityGovernor.push(renderCost, now)
+    if (nextQuality && nextQuality !== this.qualityKey) this.setQuality(nextQuality, true)
   }
 
   private simulate(dt: number, time: number) {
     const pointer = this.pointer
     const previousX = pointer.x
     const previousY = pointer.y
-    pointer.x = damp(pointer.x, pointer.targetX, pointer.touching ? 30 : 22, dt)
-    pointer.y = damp(pointer.y, pointer.targetY, pointer.touching ? 30 : 22, dt)
-    pointer.velocityX = damp(pointer.velocityX, (pointer.x - previousX) / dt, 16, dt)
-    pointer.velocityY = damp(pointer.velocityY, (pointer.y - previousY) / dt, 16, dt)
+    pointer.x = damp(pointer.x, pointer.targetX, pointer.touching ? 34 : 25, dt)
+    pointer.y = damp(pointer.y, pointer.targetY, pointer.touching ? 34 : 25, dt)
+    pointer.velocityX = damp(pointer.velocityX, (pointer.x - previousX) / dt, 18, dt)
+    pointer.velocityY = damp(pointer.velocityY, (pointer.y - previousY) / dt, 18, dt)
 
     const inputSpeed = hypot2(pointer.inputVx, pointer.inputVy)
-    const targetEnergy = pointer.inside ? clamp(inputSpeed / 1450, 0.08, 1) : 0
-    pointer.energy = damp(pointer.energy, targetEnergy, pointer.inside ? 7 : 2.8, dt)
-    pointer.inputVx = damp(pointer.inputVx, 0, 4.4, dt)
-    pointer.inputVy = damp(pointer.inputVy, 0, 4.4, dt)
+    const targetEnergy = pointer.inside ? clamp(0.12 + inputSpeed / 1500, 0.12, 1) : 0
+    pointer.energy = damp(pointer.energy, targetEnergy, pointer.inside ? 8.5 : 2.6, dt)
+    pointer.inputVx = damp(pointer.inputVx, 0, 5, dt)
+    pointer.inputVy = damp(pointer.inputVy, 0, 5, dt)
+
+    const impulse = this.pendingImpulse
+    this.pendingImpulse = null
 
     const { lineCount, pointCount } = this.quality
     const { dx, dy, vx, vy } = this.mesh
-    const radius = Math.max(120, Math.min(this.width, this.height) * (this.coarsePointer ? 0.27 : 0.22))
+    const radius = Math.max(135, Math.min(this.width, this.height) * (this.coarsePointer ? 0.31 : 0.245))
     const radiusInv = 1 / radius
-    const coupling = this.qualityKey === 'economy' ? 18 : 21
-    const restoring = 17
-    const damping = Math.exp(-6.8 * dt)
+    const impulseRadius = radius * 0.86
+    const impulseRadiusInv = 1 / impulseRadius
+    const coupling = this.qualityKey === 'economy' ? 21 : 24
+    const restoring = 16.5
+    const damping = Math.exp(-6.35 * dt)
 
     for (let i = 0; i < lineCount; i += 1) {
       const fx = i / Math.max(1, lineCount - 1)
@@ -451,11 +563,11 @@ export class HeroWaveEngine {
         const index = i * pointCount + j
 
         const ambientX =
-          Math.sin(time * 0.62 + fy * 5.1 + fx * 2.4) * 2.5 +
-          Math.sin(time * 0.31 - fy * 3.7 + fx * 7.2) * 1.35
+          Math.sin(time * 0.58 + fy * 5.1 + fx * 2.4) * 2.7 +
+          Math.sin(time * 0.29 - fy * 3.7 + fx * 7.2) * 1.45
         const ambientY =
-          Math.cos(time * 0.48 + fy * 3.8 + fx * 4.1) * 1.35 +
-          Math.sin(time * 0.24 + fx * 5.6) * 0.75
+          Math.cos(time * 0.46 + fy * 3.8 + fx * 4.1) * 1.45 +
+          Math.sin(time * 0.23 + fx * 5.6) * 0.8
 
         let forceX = (ambientX - dx[index]) * restoring
         let forceY = (ambientY - dy[index]) * restoring
@@ -490,12 +602,31 @@ export class HeroWaveEngine {
             const invDistance = 1 / Math.max(18, distance)
             const nx = px * invDistance
             const ny = py * invDistance
-            const speedForce = 10 + pointer.energy * 38
-            const directionalX = clamp(pointer.inputVx / 900, -1.2, 1.2)
-            const directionalY = clamp(pointer.inputVy / 900, -1.2, 1.2)
+            const directionalX = clamp(pointer.inputVx / 900, -1.35, 1.35)
+            const directionalY = clamp(pointer.inputVy / 900, -1.35, 1.35)
+            const radialForce = 78 + pointer.energy * 215
 
-            forceX += (nx * speedForce + directionalX * 26) * influence
-            forceY += (ny * speedForce * 0.58 + directionalY * 15) * influence
+            forceX += (nx * radialForce + directionalX * 210) * influence
+            forceY += (ny * radialForce * 0.52 + directionalY * 125) * influence
+          }
+        }
+
+        if (impulse) {
+          const ix = baseX - impulse.x
+          const iy = baseY - impulse.y
+          const distance = hypot2(ix, iy)
+          if (distance < impulseRadius) {
+            const influence = 1 - smoothstep(0.05, 1, distance * impulseRadiusInv)
+            const speed = Math.max(1, hypot2(impulse.vx, impulse.vy))
+            const dirX = impulse.vx / speed
+            const dirY = impulse.vy / speed
+            const invDistance = 1 / Math.max(20, distance)
+            const radialX = ix * invDistance
+            const radialY = iy * invDistance
+            const kick = 82 + impulse.strength * 155
+
+            vx[index] += (dirX * kick + radialX * 52) * influence
+            vy[index] += (dirY * kick * 0.58 + radialY * 34) * influence
           }
         }
 
@@ -503,13 +634,13 @@ export class HeroWaveEngine {
           const rx = baseX - ripple.x
           const ry = baseY - ripple.y
           const distance = hypot2(rx, ry)
-          const ring = ripple.age * 270
-          const band = 1 - smoothstep(0, 78, Math.abs(distance - ring))
+          const ring = ripple.age * 330
+          const band = 1 - smoothstep(0, 86, Math.abs(distance - ring))
           if (band > 0) {
             const invDistance = 1 / Math.max(22, distance)
-            const fade = Math.exp(-ripple.age * 2.25) * ripple.strength * band
-            forceX += rx * invDistance * fade * 44
-            forceY += ry * invDistance * fade * 31
+            const fade = Math.exp(-ripple.age * 2.1) * ripple.strength * band
+            forceX += rx * invDistance * fade * 115
+            forceY += ry * invDistance * fade * 74
           }
         }
 
@@ -522,7 +653,7 @@ export class HeroWaveEngine {
 
     for (let i = this.ripples.length - 1; i >= 0; i -= 1) {
       this.ripples[i].age += dt
-      if (this.ripples[i].age > 1.55) this.ripples.splice(i, 1)
+      if (this.ripples[i].age > 1.7) this.ripples.splice(i, 1)
     }
 
     this.updateCssPointer()
@@ -552,15 +683,15 @@ export class HeroWaveEngine {
     const { dx, dy } = this.mesh
     const gradient = ctx.createLinearGradient(0, 0, 0, this.height)
     gradient.addColorStop(0, `rgba(${this.strokeRgb},0)`)
-    gradient.addColorStop(0.1, `rgba(${this.strokeRgb},0.16)`)
-    gradient.addColorStop(0.42, `rgba(${this.strokeRgb},0.24)`)
-    gradient.addColorStop(0.78, `rgba(${this.strokeRgb},0.16)`)
+    gradient.addColorStop(0.08, `rgba(${this.strokeRgb},0.15)`)
+    gradient.addColorStop(0.42, `rgba(${this.strokeRgb},0.29)`)
+    gradient.addColorStop(0.8, `rgba(${this.strokeRgb},0.17)`)
     gradient.addColorStop(1, `rgba(${this.strokeRgb},0)`)
 
     const underGradient = ctx.createLinearGradient(0, 0, 0, this.height)
     underGradient.addColorStop(0, `rgba(${this.strokeRgb},0)`)
-    underGradient.addColorStop(0.2, `rgba(${this.strokeRgb},0.055)`)
-    underGradient.addColorStop(0.74, `rgba(${this.strokeRgb},0.045)`)
+    underGradient.addColorStop(0.18, `rgba(${this.strokeRgb},0.065)`)
+    underGradient.addColorStop(0.76, `rgba(${this.strokeRgb},0.055)`)
     underGradient.addColorStop(1, `rgba(${this.strokeRgb},0)`)
 
     ctx.lineCap = 'round'
@@ -568,31 +699,31 @@ export class HeroWaveEngine {
 
     for (let i = 0; i < lineCount; i += 1) {
       const fx = i / Math.max(1, lineCount - 1)
-      const depth = 0.72 + Math.sin(fx * Math.PI) * 0.28
+      const depth = 0.7 + Math.sin(fx * Math.PI) * 0.3
       const baseX = fx * this.width
 
       for (let j = 0; j < pointCount; j += 1) {
         const fy = j / Math.max(1, pointCount - 1)
         const index = i * pointCount + j
         const stillX = staticFrame
-          ? Math.sin(fy * 5.1 + fx * 2.4) * 2.2 + Math.sin(-fy * 3.7 + fx * 7.2) * 1.1
+          ? Math.sin(fy * 5.1 + fx * 2.4) * 2.4 + Math.sin(-fy * 3.7 + fx * 7.2) * 1.2
           : dx[index]
-        const stillY = staticFrame ? Math.cos(fy * 3.8 + fx * 4.1) * 1.1 : dy[index]
-        const perspective = Math.sin(fy * Math.PI) * Math.sin(fx * Math.PI * 2 + time * 0.08) * 0.7
+        const stillY = staticFrame ? Math.cos(fy * 3.8 + fx * 4.1) * 1.2 : dy[index]
+        const perspective = Math.sin(fy * Math.PI) * Math.sin(fx * Math.PI * 2 + time * 0.08) * 0.8
         this.lineBuffer[j * 2] = baseX + stillX + perspective
         this.lineBuffer[j * 2 + 1] = fy * this.height + stillY
       }
 
       if (softUnderstroke) {
-        ctx.globalAlpha = 0.82 * depth
+        ctx.globalAlpha = 0.86 * depth
         ctx.strokeStyle = underGradient
-        ctx.lineWidth = this.qualityKey === 'ultra' ? 2.1 : 1.8
+        ctx.lineWidth = this.qualityKey === 'ultra' ? 2.25 : 1.9
         this.strokeBufferedLine()
       }
 
       ctx.globalAlpha = depth
       ctx.strokeStyle = gradient
-      ctx.lineWidth = i % 12 === 0 ? 0.92 : 0.64
+      ctx.lineWidth = i % 11 === 0 ? 1 : 0.68
       this.strokeBufferedLine()
     }
 

@@ -15,15 +15,15 @@ export const WAVE_QUALITY: Record<WaveQualityKey, WaveQualityPreset> = {
     key: 'economy',
     lineCount: 30,
     pointCount: 21,
-    maxDpr: 1.25,
-    targetFps: 50,
+    maxDpr: 1.2,
+    targetFps: 45,
     softUnderstroke: false,
     rippleLimit: 2,
   },
   balanced: {
     key: 'balanced',
-    lineCount: 46,
-    pointCount: 25,
+    lineCount: 48,
+    pointCount: 27,
     maxDpr: 1.5,
     targetFps: 60,
     softUnderstroke: true,
@@ -31,8 +31,8 @@ export const WAVE_QUALITY: Record<WaveQualityKey, WaveQualityPreset> = {
   },
   ultra: {
     key: 'ultra',
-    lineCount: 64,
-    pointCount: 31,
+    lineCount: 66,
+    pointCount: 33,
     maxDpr: 1.8,
     targetFps: 120,
     softUnderstroke: true,
@@ -65,8 +65,8 @@ const nextHigher = (key: WaveQualityKey): WaveQualityKey => {
 }
 
 /**
- * Very conservative runtime governor. It samples *render cost* rather than rAF
- * interval, so a 60 Hz display does not get mistaken for a slow machine.
+ * Conservative runtime governor. It samples render cost rather than rAF
+ * interval so a 60 Hz panel is never mistaken for a slow machine.
  */
 export class WaveQualityGovernor {
   private emaCost = 0
@@ -92,9 +92,8 @@ export class WaveQualityGovernor {
 
     const preset = WAVE_QUALITY[this.key]
     const frameBudget = 1000 / preset.targetFps
-    const expensive = this.emaCost > Math.max(5.25, frameBudget * 0.67)
-    const veryCheap = this.emaCost < 2.2
-
+    const expensive = this.emaCost > Math.max(5.2, frameBudget * 0.67)
+    const veryCheap = this.emaCost < 2.15
     this.samples = 0
 
     if (expensive && this.key !== 'economy') {
