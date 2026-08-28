@@ -11,8 +11,17 @@ Under the following terms:
 
 - **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
 - **NonCommercial** — You may not use the material for commercial purposes.
+- **No additional restrictions** — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
 
-No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+---
+
+## Project attribution and adaptation notice
+
+This portfolio contains original work by **Parsa Emami** and a substantially modified implementation inspired in part by **Antoine Wodniack's AW 2025 Portfolio**:
+
+- https://github.com/AntoineW/AW-2025-Portfolio
+
+The adapted portions remain subject to the upstream CC BY-NC 4.0 terms. The current project changes the information architecture, content, visual composition, motion system, and hero-wave implementation rather than redistributing the reference project unchanged.
 
 ---
 
@@ -21,6 +30,7 @@ No additional restrictions — You may not apply legal terms or technological me
 This project is shared to support learning, experimentation, and growth in the developer community. You are welcome to explore, study, and adapt it for your own personal or educational purposes.
 
 **Do not**:
+
 - Copy/paste it to create your own portfolio without significant modification.
 - Sell, repackage, or commercially exploit it.
 
@@ -31,4 +41,4 @@ Let it inspire your own ideas, not replace them.
 ## Full License Text
 
 For the full legal license, visit:
-[https://creativecommons.org/licenses/by-nc/4.0/legalcode](https://creativecommons.org/licenses/by-nc/4.0/legalcode)
+https://creativecommons.org/licenses/by-nc/4.0/legalcode

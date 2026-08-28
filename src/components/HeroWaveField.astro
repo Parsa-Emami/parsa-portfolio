@@ -11,18 +11,40 @@ const { class: className } = Astro.props
 <script>
   import { HeroWaveEngine } from '../utils/HeroWaveEngine'
 
+  type WaveHost = HTMLElement & { __heroWaveEngine?: HeroWaveEngine }
+  type LifecycleDocument = Document & { __heroWaveLifecycleBound?: boolean }
+
+  const getHosts = () => document.querySelectorAll<WaveHost>('[data-hero-wave]')
+
   const mountHeroWaves = () => {
-    document.querySelectorAll<HTMLElement>('[data-hero-wave]').forEach((host) => {
-      if (host.dataset.waveMounted === 'true') return
-      host.dataset.waveMounted = 'true'
+    getHosts().forEach((host) => {
+      if (host.__heroWaveEngine) return
 
       try {
-        const engine = new HeroWaveEngine(host)
-        ;(host as HTMLElement & { waveEngine?: HeroWaveEngine }).waveEngine = engine
-      } catch {
+        host.__heroWaveEngine = new HeroWaveEngine(host)
+        host.dataset.waveMounted = 'true'
+      } catch (error) {
         host.classList.add('is-fallback')
+        host.dataset.waveMounted = 'fallback'
+        console.warn('[hero-wave] Canvas engine unavailable; using CSS fallback.', error)
       }
     })
+  }
+
+  const destroyHeroWaves = () => {
+    getHosts().forEach((host) => {
+      host.__heroWaveEngine?.destroy()
+      delete host.__heroWaveEngine
+      delete host.dataset.waveMounted
+    })
+  }
+
+  const lifecycleDocument = document as LifecycleDocument
+  if (!lifecycleDocument.__heroWaveLifecycleBound) {
+    lifecycleDocument.__heroWaveLifecycleBound = true
+    document.addEventListener('astro:page-load', mountHeroWaves)
+    document.addEventListener('astro:before-swap', destroyHeroWaves as EventListener)
+    window.addEventListener('pagehide', destroyHeroWaves, { passive: true })
   }
 
   if (document.readyState === 'loading') {
@@ -34,90 +56,108 @@ const { class: className } = Astro.props
 
 <style lang="scss">
   .hero-wave {
+    --hero-wave-rgb: 255,255,255;
+    --wave-x: 50%;
+    --wave-y: 46%;
+    --wave-energy: 0;
+
     position: absolute;
     inset: 0;
-    z-index: 0;
     overflow: hidden;
     pointer-events: none;
+    isolation: isolate;
     contain: layout paint style;
-
-    &__canvas,
-    &__vignette {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    &__canvas {
-      display: block;
-      opacity: .92;
-      transform: translateZ(0);
-    }
-
-    &__focus {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: clamp(360px, 50vw, 760px);
-      aspect-ratio: 1;
-      border-radius: 50%;
-      background:
-        radial-gradient(
-          circle,
-          color(accent, .135) 0,
-          color(accent, .072) 20%,
-          color(accent, .025) 46%,
-          transparent 70%
-        );
-      opacity: .54;
-      mix-blend-mode: screen;
-      transform: translate3d(0, 0, 0);
-      transform-origin: 50% 50%;
-      will-change: transform, opacity;
-      backface-visibility: hidden;
-    }
-
-    &__vignette {
-      background:
-        linear-gradient(90deg, color(primary, .55), transparent 14%, transparent 86%, color(primary, .55)),
-        linear-gradient(180deg, color(primary, .18), transparent 26%, transparent 70%, color(primary, .52));
-    }
-
-    &.is-fallback {
-      background:
-        repeating-linear-gradient(90deg, color(secondary, .11) 0 1px, transparent 1px 24px),
-        radial-gradient(circle at 52% 44%, color(accent, .1), transparent 34%);
-    }
   }
 
-  :global(.theme-contrasted) .hero-wave__focus {
-    mix-blend-mode: multiply;
-    opacity: .42;
+  .hero-wave__canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0.96;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 7%,
+      #000 89%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 7%,
+      #000 89%,
+      transparent 100%
+    );
   }
 
-  :global(.theme-contrasted) .hero-wave__vignette {
+  .hero-wave__focus {
+    position: absolute;
+    inset: -18%;
+    opacity: calc(0.18 + var(--wave-energy) * 0.18);
     background:
-      linear-gradient(90deg, color(primary, .4), transparent 14%, transparent 86%, color(primary, .4)),
-      linear-gradient(180deg, color(primary, .08), transparent 26%, transparent 70%, color(primary, .38));
+      radial-gradient(
+        circle at var(--wave-x) var(--wave-y),
+        rgb(255 255 255 / 0.085) 0%,
+        rgb(255 255 255 / 0.035) 13%,
+        transparent 31%
+      ),
+      radial-gradient(
+        ellipse 48% 38% at var(--wave-x) var(--wave-y),
+        rgb(255 255 255 / 0.035),
+        transparent 72%
+      );
+    filter: blur(5px);
+    transition: opacity 240ms ease-out;
+    will-change: opacity;
   }
 
-  @media (max-width: 900px) {
-    .hero-wave__canvas { opacity: .84; }
-    .hero-wave__focus { width: clamp(330px, 68vw, 620px); }
+  .hero-wave__vignette {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgb(0 0 0 / 0.2), transparent 14%, transparent 86%, rgb(0 0 0 / 0.2)),
+      linear-gradient(180deg, rgb(0 0 0 / 0.11), transparent 24%, transparent 76%, rgb(0 0 0 / 0.22));
   }
 
-  @media (max-width: 560px) {
-    .hero-wave__canvas { opacity: .79; }
-    .hero-wave__focus { width: clamp(300px, 88vw, 480px); }
-    .hero-wave__vignette {
-      background:
-        linear-gradient(90deg, color(primary, .42), transparent 18%, transparent 82%, color(primary, .42)),
-        linear-gradient(180deg, color(primary, .1), transparent 30%, transparent 68%, color(primary, .48));
+  .hero-wave.is-fallback {
+    background:
+      radial-gradient(circle at 50% 46%, rgb(255 255 255 / 0.05), transparent 34%),
+      repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent calc(2.2vw - 1px),
+        rgb(255 255 255 / 0.09) calc(2.2vw - 1px),
+        rgb(255 255 255 / 0.09) 2.2vw
+      );
+  }
+
+  .hero-wave.is-fallback .hero-wave__canvas,
+  .hero-wave.is-fallback .hero-wave__focus {
+    display: none;
+  }
+
+  @media (max-width: 699px), (pointer: coarse) {
+    .hero-wave__canvas {
+      opacity: 0.82;
+    }
+
+    .hero-wave__focus {
+      opacity: 0.12;
+      filter: blur(9px);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero-wave__focus { will-change: auto; }
+    .hero-wave__focus {
+      display: none;
+    }
+
+    .hero-wave__canvas {
+      opacity: 0.72;
+    }
   }
 </style>

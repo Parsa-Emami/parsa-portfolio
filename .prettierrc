@@ -2,5 +2,7 @@
   "tabWidth": 2,
   "semi": false,
   "singleQuote": true,
-  "htmlWhitespaceSensitivity": "ignore",
+  "trailingComma": "all",
+  "printWidth": 100,
+  "htmlWhitespaceSensitivity": "ignore"
 }
