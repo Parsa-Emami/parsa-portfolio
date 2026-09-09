@@ -1,0 +1,257 @@
+---
+const stats = [
+  { label: 'SIGNAL', value: '98.2', suffix: '%' },
+  { label: 'NOISE FLOOR', value: '-84', suffix: 'dB' },
+  { label: 'VECTORS TRACED', value: '128', suffix: '' },
+]
+---
+
+<section class="signal" id="signal" aria-labelledby="signal-title" data-header-tone="dark" data-section-name="Signal">
+  <div class="signal__field" data-signal-field aria-hidden="true">
+    <svg class="signal__svg js-signal-svg" xmlns="http://www.w3.org/2000/svg" focusable="false"></svg>
+  </div>
+  <div class="signal__scan" aria-hidden="true"></div>
+  <div class="signal__vignette" aria-hidden="true"></div>
+
+  <div class="site-shell signal__shell">
+    <div class="section-heading" data-reveal>
+      <span class="section-number">05</span>
+      <p class="section-kicker">SIGNAL / NOISE</p>
+      <h2 id="signal-title">Security is pattern recognition at scale — finding the signal inside everything else.</h2>
+    </div>
+
+    <div class="signal__body">
+      <p class="signal__statement" data-split-reveal>
+        This field behaves the way a monitored system does: quiet until something moves, then it
+        answers back in real time. Every line is a data point reacting to input, not decoration.
+      </p>
+
+      <div class="signal__readout" data-reveal>
+        {stats.map((stat) => (
+          <div class="signal__stat">
+            <span>{stat.label}</span>
+            <b data-signal-value={stat.value} data-signal-suffix={stat.suffix}>0</b>
+          </div>
+        ))}
+        <p class="signal__hint"><i>INPUT</i>MOVE THE CURSOR TO INTERFERE WITH THE FIELD</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { SignalWaveEngine } from '../utils/SignalWaveEngine'
+
+  type FieldHost = HTMLElement & { __signalWaveEngine?: SignalWaveEngine }
+  type LifecycleDocument = Document & { __signalWaveLifecycleBound?: boolean }
+
+  const getHosts = () => document.querySelectorAll<FieldHost>('[data-signal-field]')
+
+  const mount = () => {
+    getHosts().forEach((host) => {
+      if (host.__signalWaveEngine) return
+      try {
+        host.__signalWaveEngine = new SignalWaveEngine(host)
+      } catch (error) {
+        host.classList.add('is-fallback')
+        console.warn('[signal-wave] Engine unavailable; using static fallback.', error)
+      }
+    })
+  }
+
+  const teardown = () => {
+    getHosts().forEach((host) => {
+      host.__signalWaveEngine?.destroy()
+      delete host.__signalWaveEngine
+    })
+  }
+
+  const lifecycleDocument = document as LifecycleDocument
+  if (!lifecycleDocument.__signalWaveLifecycleBound) {
+    lifecycleDocument.__signalWaveLifecycleBound = true
+    document.addEventListener('astro:page-load', mount)
+    document.addEventListener('astro:before-swap', teardown as EventListener)
+    window.addEventListener('pagehide', teardown, { passive: true })
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mount, { once: true })
+  } else {
+    mount()
+  }
+</script>
+
+<style lang="scss">
+  .signal {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    background: color(primary);
+    color: color(secondary);
+  }
+
+  .signal__field {
+    --signal-x: 50%;
+    --signal-y: 50%;
+
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+
+    &:before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+      width: .5rem;
+      height: .5rem;
+      background: color(accent);
+      border-radius: 50%;
+      box-shadow: 0 0 0 6px color(accent, .16);
+      transform: translate3d(calc(var(--signal-x) - 50%), calc(var(--signal-y) - 50%), 0);
+      will-change: transform;
+      content: '';
+    }
+
+    &.is-fallback {
+      background:
+        radial-gradient(circle at 50% 46%, color(accent, .07), transparent 38%),
+        repeating-linear-gradient(90deg, transparent 0, transparent calc(2.4vw - 1px), color(secondary, .05) calc(2.4vw - 1px), color(secondary, .05) 2.4vw);
+      .signal__svg { display: none; }
+    }
+  }
+
+  .signal__svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    :global(.signal__line) {
+      fill: none;
+      stroke: color(accent, .82);
+      stroke-width: 1px;
+      vector-effect: non-scaling-stroke;
+    }
+  }
+
+  .signal__scan {
+    position: absolute;
+    inset: -10% 0 auto 0;
+    z-index: 1;
+    height: 40%;
+    background: linear-gradient(180deg, transparent, color(accent, .06) 45%, transparent);
+    animation: signal-scan 7s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes signal-scan {
+    0% { transform: translateY(-20%); }
+    50% { transform: translateY(220%); }
+    100% { transform: translateY(-20%); }
+  }
+
+  .signal__vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 50%, transparent 30%, color(primary, .82) 92%),
+      linear-gradient(180deg, color(primary, .55), transparent 26%, transparent 74%, color(primary, .68));
+    pointer-events: none;
+  }
+
+  .signal__shell {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding-block: clamp(2rem, 6vh, 4rem);
+  }
+
+  .signal__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+    gap: clamp(3rem, 7vw, 7rem);
+    align-items: end;
+    margin-top: clamp(3rem, 7vh, 6rem);
+  }
+
+  .signal__statement {
+    margin: 0;
+    max-width: 34rem;
+    font: 200 clamp(1.35rem, 2.35vw, 1.9rem)/1.42 font-family(editorial);
+    letter-spacing: -.015em;
+    color: color(secondary, .82);
+  }
+
+  .signal__readout {
+    display: grid;
+    gap: 1.1rem;
+    padding: 1.4rem 1.5rem;
+    border: 1px solid color(shadow);
+    background: linear-gradient(160deg, color(surface, .82), color(primary, .9));
+    backdrop-filter: blur(14px);
+    box-shadow: 0 2rem 5rem -3rem rgba(0, 0, 0, .7);
+  }
+
+  .signal__stat {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid color(shadow);
+
+    &:last-of-type { padding-bottom: 0; border-bottom: none; }
+
+    span {
+      color: color(muted);
+      font: 700 .58rem/1 font-family(fraktion);
+      letter-spacing: 0.1em;
+    }
+
+    b {
+      font: 400 1.5rem/1 font-family(fraktion);
+      letter-spacing: -.01em;
+      color: color(accent);
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .signal__hint {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    margin: .3rem 0 0;
+    color: color(muted);
+    font: 400 .58rem/1.3 font-family(fraktion);
+    letter-spacing: 0.06em;
+
+    i {
+      padding: .2rem .4rem;
+      border: 1px solid color(shadow);
+      color: color(secondary, .6);
+      font-style: normal;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .signal__body { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .signal { min-height: auto; padding-block: clamp(5rem, 18vw, 7rem); }
+    .signal__readout { padding: 1.15rem 1.25rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .signal__scan { display: none; }
+    .signal__field:before { display: none; }
+  }
+</style>

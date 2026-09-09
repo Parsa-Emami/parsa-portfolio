@@ -20,7 +20,7 @@ import IconGlyph from './IconGlyph.astro'
 <div class="motion-chapter" aria-hidden="true">
   <span class="motion-chapter__eyebrow">NOW VIEWING</span>
   <span class="motion-chapter__name" data-section-name-current>Intro</span>
-  <span class="motion-chapter__index" data-section-index-current>01 / 07</span>
+  <span class="motion-chapter__index" data-section-index-current>01 / 08</span>
 </div>
 
 <div class="motion-scene-gate" data-scene-gate aria-hidden="true">
@@ -452,6 +452,57 @@ import IconGlyph from './IconGlyph.astro'
     })
   }
 
+  const initSignalMotion = () => {
+    const section = document.querySelector('.signal')
+    if (!section) return
+
+    // The wave field breathes slowly inward as the section crosses the
+    // viewport — a subtle "focusing" cue that reads as intentional rather
+    // than as scroll-linked animation for its own sake.
+    const field = section.querySelector('[data-signal-field]')
+    if (field && !reduceMotion) {
+      gsap.fromTo(field, { scale: 1.12 }, {
+        scale: 1,
+        ease: 'none',
+        scrollTrigger: { trigger: section, start: 'top bottom', end: 'bottom top', scrub: 1.2 },
+      })
+    }
+
+    // HUD-style stat readout counts up once, on first approach, rather than
+    // arriving pre-filled — it should feel measured, not decorative.
+    const values = Array.from(section.querySelectorAll<HTMLElement>('[data-signal-value]'))
+    if (!values.length) return
+
+    const runCount = () => {
+      values.forEach((el) => {
+        const raw = el.getAttribute('data-signal-value') || '0'
+        const target = Number(raw) || 0
+        const suffix = el.getAttribute('data-signal-suffix') || ''
+        const decimals = raw.includes('.') ? 1 : 0
+
+        if (reduceMotion) {
+          el.textContent = `${target.toFixed(decimals)}${suffix}`
+          return
+        }
+
+        const proxy = { value: 0 }
+        gsap.to(proxy, {
+          value: target,
+          duration: 1.7,
+          ease: 'expo.out',
+          onUpdate: () => { el.textContent = `${proxy.value.toFixed(decimals)}${suffix}` },
+        })
+      })
+    }
+
+    ScrollTrigger.create({
+      trigger: section.querySelector('.signal__readout') || section,
+      start: 'top 85%',
+      once: true,
+      onEnter: runCount,
+    })
+  }
+
   const initCTAMotion = () => {
     const section = document.querySelector('.cta')
     if (!section || reduceMotion) return
@@ -700,6 +751,7 @@ import IconGlyph from './IconGlyph.astro'
     initGlobalReveals()
     initResponsiveScenes()
     initExperienceMotion()
+    initSignalMotion()
     initCTAMotion()
     initMagnetic()
     initTilt()
