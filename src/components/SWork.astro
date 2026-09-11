@@ -2,7 +2,7 @@
 import { systems } from '../data/portfolio'
 import IconGlyph from './IconGlyph.astro'
 
-const systemIcons = ['kernel', 'orbit', 'profile'] as const
+const systemIcons = ['kernel', 'orbit', 'navigation', 'footer', 'profile', 'brand'] as const
 ---
 
 <section class="systems" id="systems" aria-labelledby="systems-title" data-header-tone="light" data-section-name="Systems">
@@ -13,7 +13,7 @@ const systemIcons = ['kernel', 'orbit', 'profile'] as const
           <div class="section-heading section-heading--dark" data-reveal>
             <span class="section-number">02</span>
             <p class="section-kicker">ENTERPRISE / PRIVATE SYSTEMS</p>
-            <h2 id="systems-title">Three systems. Three different kinds of complexity.</h2>
+            <h2 id="systems-title">{systems.length} systems. {systems.length} different kinds of complexity.</h2>
           </div>
           <p class="systems__intro" data-reveal>
             These are private engineering products. The portfolio shows architecture, constraints and decisions — not confidential source code.
@@ -124,6 +124,9 @@ const systemIcons = ['kernel', 'orbit', 'profile'] as const
     &:hover { border-color: color(accent, .56); box-shadow: 0 2.4rem 7rem rgba(0,0,0,.3), 0 0 0 1px color(accent, .08); }
     &--2 { background: linear-gradient(155deg, color(surface), color(surface-raised)); }
     &--3 { background: radial-gradient(circle at 18% 80%, color(electric, .07), transparent 20rem), color(primary); }
+    &--4 { background: linear-gradient(160deg, color(surface-raised), color(surface)); }
+    &--5 { background: radial-gradient(circle at 82% 82%, color(accent, .07), transparent 20rem), color(primary); }
+    &--6 { background: radial-gradient(circle at 12% 18%, color(electric, .09), transparent 18rem), linear-gradient(150deg, color(surface-raised), color(primary) 62%); }
 
     &__noise {
       position: absolute;

@@ -16,7 +16,7 @@ import { openSourceProjects, profile } from '../data/portfolio'
     <div class="oss__viewport">
       <div class="oss__track">
         <div class="oss__lead-card">
-          <p>PUBLIC / 03 REPOSITORIES</p>
+          <p>PUBLIC / {String(openSourceProjects.length).padStart(2, '0')} REPOSITORIES</p>
           <strong>CODE<br/>YOU CAN<br/><em>INSPECT.</em></strong>
           <a href={profile.github} target="_blank" rel="noopener noreferrer" data-magnetic data-cursor="GitHub">GITHUB PROFILE ↗</a>
         </div>
